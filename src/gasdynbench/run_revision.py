@@ -547,6 +547,29 @@ def _timing(evidences: list[Evidence], quick: bool) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def build_main_evidences(
+    quick: bool = False, seed: int = 11
+) -> tuple[list[Evidence], dict[str, dict]]:
+    """Build the five canonical models once for shared evaluation/timing audits."""
+    n = 250 if quick else 900
+    builders = [
+        ("Rayleigh inverse", _build_rayleigh),
+        ("Fanno inverse", _build_fanno),
+        ("Oblique inverse", _build_oblique),
+        ("Nozzle inverse", _build_nozzle),
+        ("Shock tube implicit", _build_shock_tube),
+    ]
+    evidences: list[Evidence] = []
+    extras: dict[str, dict] = {}
+    for i, (label, builder) in enumerate(builders):
+        print(f"building {label} ({i + 1}/{len(builders)})", flush=True)
+        rng = np.random.default_rng(seed + 100 * i)
+        evidence, extra = builder(rng, n, seed + i, quick)
+        evidences.append(evidence)
+        extras[label] = extra
+    return evidences, extras
+
+
 def _scaling(builders: list[tuple[str, callable]], seed: int, quick: bool) -> pd.DataFrame:
     sizes = [120, 250] if quick else [200, 500, 900]
     model_seeds = [seed] if quick else [11, 29, 47]
@@ -578,6 +601,7 @@ def run(output: Path, quick: bool = False, seed: int = 11) -> None:
     output.mkdir(parents=True, exist_ok=True)
     (output / "figures").mkdir(exist_ok=True)
     n = 250 if quick else 900
+    evidences, extras = build_main_evidences(quick=quick, seed=seed)
     builders = [
         ("Rayleigh inverse", _build_rayleigh),
         ("Fanno inverse", _build_fanno),
@@ -585,14 +609,6 @@ def run(output: Path, quick: bool = False, seed: int = 11) -> None:
         ("Nozzle inverse", _build_nozzle),
         ("Shock tube implicit", _build_shock_tube),
     ]
-    evidences: list[Evidence] = []
-    extras: dict[str, dict] = {}
-    for i, (label, builder) in enumerate(builders):
-        print(f"building {label} ({i + 1}/{len(builders)})", flush=True)
-        rng = np.random.default_rng(seed + 100 * i)
-        ev, extra = builder(rng, n, seed + i, quick)
-        evidences.append(ev)
-        extras[label] = extra
 
     metrics, baselines = _evaluate(evidences)
     near = _near_singular(evidences)

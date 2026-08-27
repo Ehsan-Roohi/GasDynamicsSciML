@@ -8,6 +8,8 @@ applied in place.
 - `main_clean.tex`: clean wrapper for the same `main.tex` source.
 - `ref.bib`: submitted bibliography plus reviewer-requested references.
 - `response_to_reviewers.tex`: point-by-point response for AITF-D-26-00044.
+- `generated_timing_values.tex`: generated timing/application macros shared by
+  the article and response letter.
 - `*_Revised.pdf`: corrected vector figures for Rayleigh, Fanno, and oblique
   mappings. The nozzle and shock-tube scientific figures remain.
 

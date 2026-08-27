@@ -37,6 +37,7 @@ class RepositoryContractTests(unittest.TestCase):
             "manuscript/main_clean.tex",
             "manuscript/ref.bib",
             "manuscript/response_to_reviewers.tex",
+            "manuscript/generated_timing_values.tex",
             "ARTICLE_FIGURE_MAP.md",
             "scripts/export_original_article_figures.py",
             "scripts/run_application_audits.py",

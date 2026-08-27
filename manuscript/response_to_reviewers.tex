@@ -5,6 +5,7 @@
 \hypersetup{colorlinks=true,urlcolor=responseblue,linkcolor=responseblue}
 \newcommand{\comment}[1]{\par\medskip\noindent\textbf{Reviewer comment.} \emph{#1}\par}
 \newcommand{\response}[1]{\par\noindent\textcolor{responseblue}{\textbf{Response.} #1}\par\medskip}
+\input{generated_timing_values.tex}
 \setlength{\parindent}{0pt}
 \setlength{\emergencystretch}{1em}
 \title{Response to the Editor and Reviewers\\\large Manuscript AITF-D-26-00044}
@@ -15,7 +16,7 @@
 
 Dear Professor Bucci and Reviewers,
 
-Thank you for the careful and constructive review of ``Physics-Guided Neural Surrogates for Canonical Compressible Thermal-Fluid Relations.'' We retained the structure and exposition of the submitted manuscript and made targeted corrections and additions within that exact source. New and revised text is shown in blue; a clean version is also supplied. All new numerical claims come from a public, one-command repository with unit tests and machine-readable CSV evidence. Incorrect or inconsistent learned mappings were regenerated as vector figures, while benchmark summaries are presented as tables rather than dashboard-style plots. The Rayleigh pointwise-error figure was replaced by a compact norm table. Only the overall workflow diagram remains in the article; five problem-specific diagrams are preserved as editable TikZ and vector PDF in the repository. We have removed qualitative overclaims and explicitly report negative results, classical baselines, coverage, training variability, and limitations.
+Thank you for the careful review of ``Physics-Guided Neural Surrogates for Canonical Compressible Thermal-Fluid Relations.'' We made targeted changes within the submitted source; revised text is blue and a clean version is supplied. New claims come from the public tested repository and CSV evidence. Corrected mappings use vector figures, numerical summaries use tables, the Rayleigh error plot became a norm table, and only the overall workflow remains in the article. We also report negative results, classical baselines, coverage, training variability, and limitations.
 
 \section*{Summary of major changes}
 \begin{enumerate}[leftmargin=*]
@@ -24,11 +25,8 @@ Thank you for the careful and constructive review of ``Physics-Guided Neural Sur
 \item Replaced the raw Fanno output with an exact quadratic, positive sonic transform and added a controlled raw-versus-structured ablation.
 \item Added weak/strong oblique inverse experts and a naive-MLP failure experiment; replaced soft endpoint anchors with a hard analytical output envelope.
 \item Added bounded nozzle and shock-tube outputs, a two-input shock-tube model, robust Brent reference roots, and residual checks.
-\item Added blind $L_2/L_\infty$/MAE/RMSE metrics, near-limit bins, three-seed ensembles, sample-size sensitivity, interpolation baselines, and measured CPU timing as compact tables and repository CSV files.
-\item Added a matched-budget two-to-five-dimensional extension of the same shock-tube compatibility relation to test the dimensional storage/accuracy claim directly.
-\item Added an analytical-Jacobian nozzle inverse-design demonstration and a prescribed 100,000-state shock-tube workload; both are reported as compact tables and CSV evidence.
-\item Named the released five-problem suite GasDynBench and added a compact benchmark card without changing the article's main theme.
-\item Removed five problem-specific workflow diagrams from the article to reduce length and preserved their editable sources in \texttt{docs/workflows/}.
+\item Added blind error norms, near-limit bins, seed/sample-size sensitivity, interpolation and timing baselines, a matched-budget 2D--5D audit, analytical-Jacobian nozzle inversion, and a 100,000-state workload as compact tables and CSV evidence.
+\item Named the suite GasDynBench, added a compact benchmark card, and moved five detailed workflow diagrams to \texttt{docs/workflows/}.
 \item Added a limitations/failure-modes section and replaced all claims such as ``infinite precision'' or ``near-perfect'' with numerical statements.
 \end{enumerate}
 
@@ -50,7 +48,7 @@ Thank you for the careful and constructive review of ``Physics-Guided Neural Sur
 \response{The Discussion compares branch-wise PCHIP/piecewise-linear interpolation, bracketed Brent roots, a naive MLP, and the physics-guided MLP. Tables 8 and 9 report accuracy, coverage, and measured timing. Interpolation is faster and more accurate for covered one-dimensional tables and is preferred there. Table 10 extends the same shock-tube relation from two to five physical inputs under a matched offline-state budget. The five-dimensional interpolation and MLP relative $L_2$ errors are 4.885\% and 0.1771\%, respectively, while interpolation remains slightly faster. This confines the neural advantage to compact constrained approximation as dimension increases, not universal numerical superiority.}
 
 \comment{Demonstrate actual efficiency relative to root finding or interpolation.}
-\response{We removed the former ``indicative'' timing table. Table 9 now reports warm-up, seven-repeat median CPU timings, with IQR stored in \texttt{timing.csv}. For 5,000 queries the MLP is 96--1057 times faster than repeated bracketed roots, but interpolation is 4--11 times faster than the MLP. We now state explicitly that, for a single query, Brent is comparable and is faster for Rayleigh and oblique inversion; the neural advantage is a batching effect. Table 10 reports dimensional storage, and Table 12 gives a prescribed 100,000-state shock-tube workload: 1.706~s for Brent versus 0.119~s for the MLP, with 0.158\% relative $L_2$ error. Offline training cost is excluded and remains explicit.}
+\response{Tables 9 and 12 now use one warm-started, seven-repeat, single-thread process with the same shock-tube model and Brent routine; IQRs are in \texttt{timing.csv}. At 5,000 queries, the MLP is \TimingRootSpeedMin--\TimingRootSpeedMax\ times faster than roots, while interpolation is \TimingInterpSpeedMin--\TimingInterpSpeedMax\ times faster than the MLP. At one query, Brent is faster for Rayleigh, oblique, and shock-tube inversion and comparable for Fanno. The 100,000-state result is \TimingWorkloadBrentSeconds~s versus \TimingWorkloadMlpSeconds~s (\TimingWorkloadSpeedup-fold) with \TimingWorkloadRelLtwoPercent\% relative $L_2$ error. Thus the gain is explicitly a batching effect; offline cost is excluded.}
 
 \comment{Assess robustness near singularities and discontinuities.}
 \response{The Rayleigh, Fanno, oblique, nozzle, and shock-tube subsections discuss their limiting regimes; Table 6 gives the principal failure and validity diagnostics. Additional local bins near Rayleigh/Fanno sonic states, oblique detachment, nozzle throat/exit limits, and high shock-tube pressure ratio are provided in \texttt{near\_singular\_metrics.csv}. The Fanno transform enforces the quadratic sonic limit. Shock-tube discontinuities are reconstructed analytically rather than learned as a smooth field, and equation residuals are reported.}
@@ -100,7 +98,7 @@ Thank you for the careful and constructive review of ``Physics-Guided Neural Sur
 \response{We added and discussed K.U. Rehman, W. Shatanawi, and A.B. \c{C}olak, ``Thermal analysis of flowing stream in partially heated double forward-facing step by using artificial neural network,'' \emph{Case Studies in Thermal Engineering} 37 (2022) 102221, DOI: \href{https://doi.org/10.1016/j.csite.2022.102221}{10.1016/j.csite.2022.102221}. The Introduction explains its relevance as a thermal-fluid MLP precedent and distinguishes our focus on branch/singularity benchmarks and controlled ablations.}
 
 \section*{Repository and reproducibility}
-The public GasDynBench project is \url{https://github.com/Ehsan-Roohi/GasDynamicsSciML}. It contains the package, analytical tests, CI workflow, configuration, exact CSV evidence, vector figures, highlighted and clean manuscript sources, and this response letter. The moved workflow diagrams are in \texttt{docs/workflows/}; the application audits are reproduced by \texttt{scripts/run\_application\_audits.py}. No quantitative value is inserted into the manuscript without corresponding generated evidence.
+The public \href{https://github.com/Ehsan-Roohi/GasDynamicsSciML}{GasDynBench repository} contains the tested package, CSV evidence, vector figures, manuscript sources, moved workflows, and the unified application-audit runner. Manuscript timing values are generated directly from the CSVs.
 
 We appreciate the reviewers' recommendations, which materially improved the correctness, positioning, and reproducibility of the study.
 
