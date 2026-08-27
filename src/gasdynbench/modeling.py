@@ -44,6 +44,33 @@ class ScaledMLP:
         restored = self.y_scaler.inverse_transform(pred2)
         return restored.ravel() if self._one_output else restored
 
+    def jacobian(self, x: np.ndarray) -> np.ndarray:
+        """Return the analytical output Jacobian with respect to raw inputs.
+
+        The returned array has shape ``(samples, outputs, inputs)``.  The
+        derivative includes both input and output standardization.  The audit
+        uses Tanh networks with the identity regression output supported here.
+        """
+        if self.activation != "tanh" or self.model.out_activation_ != "identity":
+            raise NotImplementedError("Analytical Jacobian is implemented for Tanh regression MLPs.")
+        x = np.atleast_2d(np.asarray(x, float))
+        activation = self.x_scaler.transform(x)
+        n_samples, n_inputs = activation.shape
+        jac = np.broadcast_to(
+            np.diag(1.0 / self.x_scaler.scale_),
+            (n_samples, n_inputs, n_inputs),
+        ).copy()
+
+        for weights, bias in zip(self.model.coefs_[:-1], self.model.intercepts_[:-1]):
+            preactivation = activation @ weights + bias
+            activation = np.tanh(preactivation)
+            jac = np.einsum("ij,njk->nik", weights.T, jac)
+            jac *= (1.0 - activation**2)[:, :, None]
+
+        jac = np.einsum("ij,njk->nik", self.model.coefs_[-1].T, jac)
+        jac *= self.y_scaler.scale_[None, :, None]
+        return jac
+
 
 def safe_logit(fraction: np.ndarray, eps: float = 1.0e-6) -> np.ndarray:
     return logit(np.clip(np.asarray(fraction, float), eps, 1.0 - eps))
@@ -67,4 +94,3 @@ def regression_metrics(y_true: np.ndarray, y_pred: np.ndarray) -> dict[str, floa
         "rmse": float(np.sqrt(np.mean(err**2))),
         "max_abs": float(np.max(np.abs(err))),
     }
-

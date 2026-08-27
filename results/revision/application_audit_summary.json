@@ -1,0 +1,10 @@
+{
+  "nozzle_cases": 9,
+  "nozzle_max_iterations": 6,
+  "nozzle_max_shock_target_abs_error": 6.822264309036541e-09,
+  "nozzle_max_back_pressure_abs_error": 0.0012381465732080876,
+  "nozzle_max_gradient_relative_difference": 2.402352030010797e-10,
+  "shock_tube_queries": 100000,
+  "shock_tube_rel_l2": 0.0015755098181270742,
+  "shock_tube_speedup": 14.303816167708485
+}
