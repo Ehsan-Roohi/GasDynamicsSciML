@@ -9,7 +9,7 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / "results" / "revision"
-MANUSCRIPT = (ROOT / "manuscript" / "main_revised_body.tex").read_text(encoding="utf-8")
+MANUSCRIPT = (ROOT / "manuscript" / "main.tex").read_text(encoding="utf-8")
 
 
 def main() -> None:
@@ -28,20 +28,23 @@ def main() -> None:
         if abs(value - expected) > 5e-7:
             raise AssertionError(f"Evidence drift for {problem}: CSV={value}, text={expected}")
     required = [
-        "benchmark_accuracy.pdf",
-        "ablation_branch_singularity.pdf",
-        "sensitivity_and_singular_error.pdf",
-        "measured_timing.pdf",
-        "nozzle_results.pdf",
-        "high_dimensional_scaling.pdf",
+        "Rayleigh_Comparison_Revised.pdf",
+        "Rayleigh_Error_Revised.pdf",
+        "Rayleigh_Inverse_Revised.pdf",
+        "Rayleigh_Ts_Revised.pdf",
+        "Fanno_Ratios_Revised.pdf",
+        "Fanno_Friction_Revised.pdf",
+        "Fanno_Inverse_Revised.pdf",
+        "Fanno_Ts_Revised.pdf",
+        "Oblique_Manifold_Revised.pdf",
     ]
     range_table = RESULTS / "range_generalization.csv"
     if not range_table.is_file() or len(pd.read_csv(range_table)) != 5:
         raise AssertionError("Edge-holdout table must contain all five problems")
     dimension_table = pd.read_csv(RESULTS / "high_dimensional_scaling.csv").set_index("dimension")
     dimension_anchors = {
-        2: ("0.0205\\%", 0.00020531342849885735),
-        5: ("4.885\\%", 0.048849607952961456),
+        2: ("2 & 64 & 4096 & 0.0205", 0.00020531342849885735),
+        5: ("5 & 5 & 3125 & 4.885", 0.048849607952961456),
     }
     for dimension, (text_anchor, expected) in dimension_anchors.items():
         if text_anchor not in MANUSCRIPT:
@@ -50,10 +53,10 @@ def main() -> None:
         if abs(value - expected) > 5.0e-10:
             raise AssertionError(f"Dimensional evidence drift for d={dimension}: {value}")
     mlp_d5 = float(dimension_table.loc[5, "mlp_rel_l2"])
-    if "0.1771\\%" not in MANUSCRIPT or abs(mlp_d5 - 0.0017710570639642381) > 5.0e-10:
+    if "& 0.1771 &" not in MANUSCRIPT or abs(mlp_d5 - 0.0017710570639642381) > 5.0e-10:
         raise AssertionError(f"Five-dimensional MLP evidence drift: {mlp_d5}")
     for name in required:
-        path = RESULTS / "figures" / name
+        path = RESULTS / "article_figures" / name
         if not path.is_file() or path.stat().st_size == 0:
             raise AssertionError(f"Missing or empty figure: {path}")
     print("release evidence validated")

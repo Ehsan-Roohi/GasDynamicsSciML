@@ -16,10 +16,12 @@ class RepositoryContractTests(unittest.TestCase):
     def test_revision_sources_exist(self):
         root = Path(__file__).resolve().parents[1]
         for relative in [
-            "manuscript/main_revised_highlighted.tex",
-            "manuscript/main_revised_clean.tex",
+            "manuscript/main.tex",
+            "manuscript/main_clean.tex",
+            "manuscript/ref.bib",
             "manuscript/response_to_reviewers.tex",
             "ARTICLE_FIGURE_MAP.md",
+            "scripts/export_original_article_figures.py",
             "scripts/run_high_dimensional_scaling.py",
             "src/gasdynbench/high_dimensional.py",
         ]:
