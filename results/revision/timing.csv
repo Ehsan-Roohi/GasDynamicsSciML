@@ -1,0 +1,46 @@
+problem,batch_size,method,median_ms,iqr_ms
+Rayleigh inverse,1,physics_guided_mlp,0.171507,0.01089699999999999
+Rayleigh inverse,1,bracketed_root,0.112749,0.018421999999999994
+Rayleigh inverse,1,classical_interpolation,0.023496,0.006044500000000001
+Rayleigh inverse,100,physics_guided_mlp,0.335243,0.04191849999999997
+Rayleigh inverse,100,bracketed_root,9.448414,0.45869599999999977
+Rayleigh inverse,100,classical_interpolation,0.069594,0.006880499999999984
+Rayleigh inverse,5000,physics_guided_mlp,2.559349,0.24085149999999977
+Rayleigh inverse,5000,bracketed_root,502.692164,37.272607499999935
+Rayleigh inverse,5000,classical_interpolation,0.273971,0.026835000000000025
+Fanno inverse,1,physics_guided_mlp,0.138017,0.014602000000000004
+Fanno inverse,1,bracketed_root,0.158438,0.0051775000000000015
+Fanno inverse,1,classical_interpolation,0.01986,0.0016270000000000034
+Fanno inverse,100,physics_guided_mlp,0.304828,0.057872000000000035
+Fanno inverse,100,bracketed_root,13.870598,0.3044015000000009
+Fanno inverse,100,classical_interpolation,0.065929,0.015291999999999993
+Fanno inverse,5000,physics_guided_mlp,2.436365,0.4091559999999994
+Fanno inverse,5000,bracketed_root,947.700718,36.66133400000001
+Fanno inverse,5000,classical_interpolation,0.22664,0.018617999999999968
+Oblique inverse,1,physics_guided_mlp,0.140541,0.038698500000000025
+Oblique inverse,1,bracketed_root,0.101192,0.013439499999999993
+Oblique inverse,1,classical_interpolation,0.025358,0.0115065
+Oblique inverse,100,physics_guided_mlp,0.407892,0.062052500000000066
+Oblique inverse,100,bracketed_root,9.981333,0.45656800000000075
+Oblique inverse,100,classical_interpolation,0.149775,0.008347500000000008
+Oblique inverse,5000,physics_guided_mlp,15.615464,31.047536
+Oblique inverse,5000,bracketed_root,1501.683836,881.540484
+Oblique inverse,5000,classical_interpolation,3.851948,2.26154
+Nozzle inverse,1,physics_guided_mlp,0.15968,0.026309500000000013
+Nozzle inverse,1,bracketed_root,1.018557,0.1875110000000002
+Nozzle inverse,1,classical_interpolation,0.023666,0.0112465
+Nozzle inverse,100,physics_guided_mlp,0.523484,0.05869800000000003
+Nozzle inverse,100,bracketed_root,85.564685,1.0017069999999961
+Nozzle inverse,100,classical_interpolation,0.172719,0.0050524999999999876
+Nozzle inverse,5000,physics_guided_mlp,4.05988,0.5739075000000002
+Nozzle inverse,5000,bracketed_root,4292.216029,163.18565500000022
+Nozzle inverse,5000,classical_interpolation,0.969925,1.7447055
+Shock tube implicit,1,physics_guided_mlp,0.189745,0.05485249999999997
+Shock tube implicit,1,bracketed_root,0.296535,0.15605799999999997
+Shock tube implicit,1,classical_interpolation,0.035293,0.08232400000000001
+Shock tube implicit,100,physics_guided_mlp,0.56032,0.14875300000000008
+Shock tube implicit,100,bracketed_root,28.708886,9.194122
+Shock tube implicit,100,classical_interpolation,0.138147,0.040420999999999985
+Shock tube implicit,5000,physics_guided_mlp,20.087378,12.888789999999998
+Shock tube implicit,5000,bracketed_root,2047.351394,410.8591945000003
+Shock tube implicit,5000,classical_interpolation,4.04026,1.0120880000000003

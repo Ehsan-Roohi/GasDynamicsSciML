@@ -1,0 +1,13 @@
+{
+  "timestamp_utc": "2026-08-27T16:04:26.204657+00:00",
+  "python": "3.12.13",
+  "platform": "Linux-6.18.35-x86_64-with-glibc2.39",
+  "processor": "x86_64",
+  "numpy": "2.3.5",
+  "scipy": "1.17.0",
+  "scikit_learn": "1.8.0",
+  "seed": 11,
+  "training_samples": 900,
+  "mode": "full",
+  "timing_protocol": "warm-up then median and IQR across repeated wall-clock measurements; CPU; batch inference"
+}

@@ -1,0 +1,5 @@
+problem,variant,mae,invalid_rate
+Fanno forward near sonic,raw output,0.003232270575185168,0.9686684073107049
+Fanno forward near sonic,quadratic positive transform,1.2260169142382719e-08,0.0
+Oblique inverse,naive single MLP,0.42462319508373464,
+Oblique inverse,branch experts,0.0005076044710824908,0.0

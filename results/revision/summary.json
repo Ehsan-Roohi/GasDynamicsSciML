@@ -1,0 +1,127 @@
+{
+  "primary_metrics": [
+    {
+      "problem": "Rayleigh inverse",
+      "model": "physics_guided_mlp",
+      "rel_l2": 0.0016418787252886187,
+      "rel_linf": 0.0025213619727350155,
+      "mae": 0.002226784071745316,
+      "rmse": 0.0037806667544258835,
+      "max_abs": 0.012480741765038328
+    },
+    {
+      "problem": "Fanno inverse",
+      "model": "physics_guided_mlp",
+      "rel_l2": 0.0034307355989019054,
+      "rel_linf": 0.00376136391340266,
+      "mae": 0.004377866395066222,
+      "rmse": 0.0064378883613494964,
+      "max_abs": 0.018618751371343167
+    },
+    {
+      "problem": "Oblique inverse",
+      "model": "physics_guided_mlp",
+      "rel_l2": 0.0007990272159095416,
+      "rel_linf": 0.004542613354351587,
+      "mae": 0.0005076044710824908,
+      "rmse": 0.0009014819231781153,
+      "max_abs": 0.007116492005286856
+    },
+    {
+      "problem": "Nozzle inverse",
+      "model": "physics_guided_mlp",
+      "rel_l2": 0.0019360482573404995,
+      "rel_linf": 0.0047556296272876115,
+      "mae": 0.00352207755368644,
+      "rmse": 0.004433208295213204,
+      "max_abs": 0.022882900859101163
+    },
+    {
+      "problem": "Shock tube implicit",
+      "model": "physics_guided_mlp",
+      "rel_l2": 0.0009489588449447835,
+      "rel_linf": 0.004209402370802048,
+      "mae": 0.0023877275321380915,
+      "rmse": 0.004716549464153436,
+      "max_abs": 0.053728223668470854
+    }
+  ],
+  "physical_diagnostics": [
+    {
+      "problem": "Rayleigh",
+      "diagnostic": "entropy_linf",
+      "value": 0.02053268477672887
+    },
+    {
+      "problem": "Rayleigh",
+      "diagnostic": "entropy_peak_mach_error",
+      "value": 0.0
+    },
+    {
+      "problem": "Fanno",
+      "diagnostic": "entropy_linf",
+      "value": 0.017456221012801088
+    },
+    {
+      "problem": "Fanno",
+      "diagnostic": "nonnegative_rate",
+      "value": 1.0
+    },
+    {
+      "problem": "Oblique",
+      "diagnostic": "anchor_linf",
+      "value": 0.0
+    },
+    {
+      "problem": "Oblique",
+      "diagnostic": "valid_branch_rate",
+      "value": 1.0
+    },
+    {
+      "problem": "Nozzle",
+      "diagnostic": "back_pressure_residual_linf",
+      "value": 0.004491024837220525
+    },
+    {
+      "problem": "Nozzle",
+      "diagnostic": "valid_location_rate",
+      "value": 1.0
+    },
+    {
+      "problem": "Shock tube",
+      "diagnostic": "equation_residual_linf",
+      "value": 0.04381836676001401
+    },
+    {
+      "problem": "Shock tube",
+      "diagnostic": "valid_pressure_rate",
+      "value": 1.0
+    }
+  ],
+  "ablations": [
+    {
+      "problem": "Fanno forward near sonic",
+      "variant": "raw output",
+      "mae": 0.003232270575185168,
+      "invalid_rate": 0.9686684073107049
+    },
+    {
+      "problem": "Fanno forward near sonic",
+      "variant": "quadratic positive transform",
+      "mae": 1.2260169142382719e-08,
+      "invalid_rate": 0.0
+    },
+    {
+      "problem": "Oblique inverse",
+      "variant": "naive single MLP",
+      "mae": 0.42462319508373464,
+      "invalid_rate": NaN
+    },
+    {
+      "problem": "Oblique inverse",
+      "variant": "branch experts",
+      "mae": 0.0005076044710824908,
+      "invalid_rate": 0.0
+    }
+  ]
+}
