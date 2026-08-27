@@ -29,7 +29,6 @@ def main() -> None:
             raise AssertionError(f"Evidence drift for {problem}: CSV={value}, text={expected}")
     required = [
         "Rayleigh_Comparison_Revised.pdf",
-        "Rayleigh_Error_Revised.pdf",
         "Rayleigh_Inverse_Revised.pdf",
         "Rayleigh_Ts_Revised.pdf",
         "Fanno_Ratios_Revised.pdf",
@@ -55,6 +54,19 @@ def main() -> None:
     mlp_d5 = float(dimension_table.loc[5, "mlp_rel_l2"])
     if "& 0.1771 &" not in MANUSCRIPT or abs(mlp_d5 - 0.0017710570639642381) > 5.0e-10:
         raise AssertionError(f"Five-dimensional MLP evidence drift: {mlp_d5}")
+    application = pd.read_csv(RESULTS / "nozzle_gradient_audit.csv")
+    if "2.41\\times10^{-10}" not in MANUSCRIPT:
+        raise AssertionError("Missing nozzle Jacobian manuscript anchor")
+    if float(application["gradient_relative_difference"].max()) > 2.41e-10:
+        raise AssertionError("Nozzle analytical Jacobian audit drift")
+    workload = pd.read_csv(RESULTS / "shock_tube_many_query.csv").set_index("method")
+    if "100,000-state" not in MANUSCRIPT or "14.3 times faster" not in MANUSCRIPT:
+        raise AssertionError("Missing many-query manuscript anchor")
+    if int(workload.loc["physics_guided_mlp", "query_count"]) != 100000:
+        raise AssertionError("Shock-tube workload must contain 100,000 queries")
+    speedup = float(workload.loc["physics_guided_mlp", "speedup_vs_brent"])
+    if round(speedup, 1) != 14.3:
+        raise AssertionError(f"Many-query timing evidence drift: {speedup}")
     for name in required:
         path = RESULTS / "article_figures" / name
         if not path.is_file() or path.stat().st_size == 0:

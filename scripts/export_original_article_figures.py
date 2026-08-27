@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Regenerate only the scientific figures retained from the submitted article.
+"""Regenerate the corrected scientific line figures retained by the article.
 
-The revision deliberately keeps the submitted figure set small.  Summary error,
+The article deliberately keeps the figure set small. Summary error,
 timing, sensitivity, and dimensional-scaling evidence is reported in tables.
-This script replaces only the three submitted figures whose learned mappings
-changed during review: Rayleigh inversion, Fanno sonic/inverse behavior, and the
-oblique-shock manifold.
+The Rayleigh pointwise-error dashboard is intentionally omitted because its
+aggregate norms are reported in the manuscript table. This script regenerates
+the corrected Rayleigh, Fanno, and oblique-shock line figures.
 """
 
 from __future__ import annotations
@@ -69,17 +69,6 @@ def _rayleigh(output: Path) -> None:
     axes[0, 0].legend(frameon=False)
     fig.tight_layout()
     _save(fig, output, "Rayleigh_Comparison_Revised")
-
-    fig, axes = plt.subplots(2, 3, figsize=(9.4, 5.6))
-    for ax, col, label in zip(axes.ravel(), columns, labels):
-        rel = 100.0 * (pred[:, col] - true[:, col]) / np.maximum(np.abs(true[:, col]), 1.0e-12)
-        ax.plot(mach, rel, color=ML)
-        ax.axhline(0.0, color="0.55", linewidth=0.7)
-        ax.set(xlabel="Mach number", ylabel=f"{label} error (%)")
-        ax.grid(alpha=0.2)
-    axes.ravel()[-1].axis("off")
-    fig.tight_layout()
-    _save(fig, output, "Rayleigh_Error_Revised")
 
     pred_m = ev.predict(ev.x_test)
     fig, ax = plt.subplots(figsize=(6.7, 4.4))

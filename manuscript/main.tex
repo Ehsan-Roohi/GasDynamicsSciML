@@ -69,7 +69,7 @@
             country={USA}}
 
 \begin{abstract}
-Canonical compressible thermal-fluid problems often involve implicit, singular, and multi-branched relations that are simple to state but cumbersome to evaluate repeatedly in modern engineering workflows such as design optimization, uncertainty quantification, inverse analysis, and real-time exploration. This work presents a compact physics-guided neural-surrogate framework for five classical gas-dynamics relations: Rayleigh flow, Fanno flow, oblique shocks, normal shocks in convergent-divergent nozzles, and unsteady shock tubes. The objective is not to propose a new general-purpose neural-network architecture or to rediscover analytical gas dynamics, but to show how problem-specific surrogate design can convert canonical implicit relations into fast, accurate, and physically interpretable forward and inverse solver components. Exact analytical relations are used to generate reference data, while the learning formulation is adapted to the mathematical structure of each problem through branch decomposition, \rev{sonic-coordinate and positive/bounded output transformations}, physics-informed feature engineering, \rev{exact boundary envelopes}, and hybrid AI--analytical reconstruction. The resulting multilayer-perceptron surrogates reproduce analytical solutions with small errors, preserve physically meaningful branch structure, and recover thermodynamic consistency on entropy-based diagrams. \rev{On independent blind grids, relative $L_2$ errors for the five principal inverse tasks range from $7.99\times10^{-4}$ to $3.43\times10^{-3}$. For batches of 5,000 queries, neural inference is 96--1057 times faster than repeated bracketed root solves. Classical interpolation remains faster and, for fixed one-dimensional tables, more accurate within its covered interval; the neural advantage is instead associated with hard admissibility constraints, differentiability, complete rectangular-domain coverage, and compact approximation as the number of physical inputs increases.} By emphasizing inverse mappings, singular limits, and regime-dependent behavior, the framework provides a reproducible benchmark for scientific machine learning in compressible thermal-fluid analysis and a practical route toward embedding fast surrogate modules in real-time design-space exploration, optimization, and verification tools without repeated root-finding or table interpolation.
+Canonical compressible thermal-fluid problems often involve implicit, singular, and multi-branched relations that are simple to state but cumbersome to evaluate repeatedly in modern engineering workflows such as design optimization, uncertainty quantification, inverse analysis, and real-time exploration. This work presents a compact physics-guided neural-surrogate framework for five classical gas-dynamics relations: Rayleigh flow, Fanno flow, oblique shocks, normal shocks in convergent-divergent nozzles, and unsteady shock tubes. The objective is not to propose a new general-purpose neural-network architecture or to rediscover analytical gas dynamics, but to show how problem-specific surrogate design can convert canonical implicit relations into fast, accurate, and physically interpretable forward and inverse solver components. Exact analytical relations are used to generate reference data, while the learning formulation is adapted to the mathematical structure of each problem through branch decomposition, \rev{sonic-coordinate and positive/bounded output transformations}, physics-informed feature engineering, \rev{exact boundary envelopes}, and hybrid AI--analytical reconstruction. The resulting multilayer-perceptron surrogates reproduce analytical solutions with small errors, preserve physically meaningful branch structure, and recover thermodynamic consistency on entropy-based diagrams. \rev{On independent blind grids, relative $L_2$ errors for the five principal inverse tasks range from $7.99\times10^{-4}$ to $3.43\times10^{-3}$. For batches of 5,000 queries, neural inference is 96--1057 times faster than repeated bracketed root solves. Classical interpolation remains faster and, for fixed one-dimensional tables, more accurate within its covered interval; the neural advantage is instead associated with hard admissibility constraints, differentiability, complete rectangular-domain coverage, and compact approximation as the number of physical inputs increases. An analytical-gradient nozzle inversion and a 100,000-state shock-tube workload demonstrate the differentiable and batched use cases directly.} By emphasizing inverse mappings, singular limits, and regime-dependent behavior, the framework provides a reproducible benchmark for scientific machine learning in compressible thermal-fluid analysis and a practical route toward embedding fast surrogate modules in real-time design-space exploration, optimization, and verification tools without repeated root-finding or table interpolation.
 \end{abstract}
 
 \begin{keyword}
@@ -87,7 +87,7 @@ The central idea is to treat canonical gas-dynamics relations as compact scienti
 
 This positioning is intentionally different from full-field neural-operator modeling. For the present class of problems, the dominant challenge is not large-scale spatial representation, but stable inversion, branch separation, and preservation of limiting physical behavior. Accordingly, moderate multilayer perceptrons (MLPs), when combined with physics-guided features and decomposition strategies, provide a transparent and computationally inexpensive alternative to more complex operator architectures \cite{Goodfellow,XPINN,gPINN}. The objective is therefore not to rediscover textbook gas dynamics or to replace analytical theory. Instead, the aim is to convert classical compressible-flow relations into fast, accurate, reusable, and physically structured surrogate components that can be embedded in practical thermal-fluid analysis workflows. The result is a compact framework that is useful for rapid design-space exploration, inverse analysis, reproducible benchmarking, and interactive thermal-fluid computation.
 
-The contributions of this work are as follows. First, a unified surrogate workflow is formulated for five canonical compressible thermal-fluid problems. Second, forward, inverse, and hybrid AI--analytical learning tasks are separated explicitly so that each network has a physically meaningful role. Third, branch decomposition, \rev{positive and bounded transformations}, and boundary \rev{envelopes} are used to preserve non-bijective and singular behavior. Finally, the models are validated against analytical solutions using direct comparison, relative-error analysis, and thermodynamic consistency checks. \rev{The revision further provides controlled naive-versus-structured ablations, classical interpolation and bracketed-root baselines, measured timing, edge-holdout tests, training-seed variability, and a two-to-five-dimensional extension of the same shock-tube compatibility relation. These additions evaluate the numerical role of the surrogate without making interpolation the central theme of the article.}
+The contributions of this work are as follows. First, a unified surrogate workflow is formulated for five canonical compressible thermal-fluid problems. Second, forward, inverse, and hybrid AI--analytical learning tasks are separated explicitly so that each network has a physically meaningful role. Third, branch decomposition, \rev{positive and bounded transformations}, and boundary \rev{envelopes} are used to preserve non-bijective and singular behavior. Finally, the models are validated against analytical solutions using direct comparison, relative-error analysis, and thermodynamic consistency checks. \rev{The study further provides controlled naive-versus-structured ablations, classical interpolation and bracketed-root baselines, measured timing, edge-holdout tests, training-seed variability, and a two-to-five-dimensional extension of the same shock-tube compatibility relation. These tests evaluate the numerical role of the surrogate without making interpolation the central theme of the article.}
 
 \section{Methodology and Network Architectures}
 The general approach involves generating synthetic datasets based on exact analytical physics, followed by training specialized multilayer perceptrons (MLPs) as surrogate models \cite{Goodfellow}. In contrast to full-field operator-learning or fully physics-constrained formulations, the present study adopts low-dimensional, problem-specific architectures tailored to the structure of each canonical gas-dynamics relation \cite{DeepONet,FNO,PINO,KarniadakisReview}. Here, the term physics-informed is used in the broad sense of embedding physical structure into the surrogate design through analytical target generation, feature engineering, branch decomposition, and consistency constraints, rather than through PDE-residual loss terms alone.
@@ -130,6 +130,8 @@ Figure~\ref{fig:overall_workflow} summarizes the overall methodology adopted in 
 }
 \FloatBarrier
 
+\rev{Detailed problem-specific workflow diagrams for Rayleigh, Fanno, oblique-shock, nozzle, and shock-tube models are provided as editable TikZ source and vector PDF in the public project repository; the article retains only the overall framework diagram.}
+
 \subsection{General MLP Formulation and Training Procedure}
 
 The surrogate models employed in this work are based primarily on multilayer perceptrons (MLPs), which are fully connected feed-forward neural networks designed to approximate nonlinear mappings between prescribed inputs and outputs \cite{Goodfellow}. In the present study, the input vector may consist of one or more physical variables, such as Mach number, thermodynamic ratios, or transformed feature variables, while the output vector represents the target gas-dynamics quantities to be predicted.
@@ -153,14 +155,14 @@ Training is performed through backpropagation, in which the gradient of the loss
 \begin{equation}
 \frac{\partial \mathcal{L}}{\partial \mathbf{W}^{(l)}} \quad \text{and} \quad \frac{\partial \mathcal{L}}{\partial \mathbf{b}^{(l)}},
 \end{equation}
-which are then used by an optimizer such as Adam to update the parameters iteratively until convergence~\cite{Adam}. In this way, the network progressively adjusts its internal representation so as to reduce the prediction error over the training dataset.
+which are then used by an optimizer such as Adam or, as used here, L-BFGS to update the parameters iteratively until convergence~\cite{Adam}. In this way, the network progressively adjusts its internal representation so as to reduce the prediction error over the training dataset.
 
 MLPs offer several important strengths for the present class of problems. First, they are universal function approximators and are therefore well suited for learning smooth, highly nonlinear algebraic relations. Second, they are computationally efficient once trained, making them attractive for real-time evaluation, inverse design, and interactive visualization. Third, their architecture is flexible enough to accommodate transformed inputs, branch-wise decomposition, and problem-specific feature engineering, all of which are central to the gas-dynamics surrogates proposed here.
 
 At the same time, MLPs also have limitations. They do not automatically enforce physical conservation laws unless such information is embedded through the data, the feature design, or the loss construction. They can also struggle with multi-valued mappings, steep gradients, or singular behavior if the problem is posed in a naive input-output form. In addition, network performance can be sensitive to hyperparameters such as depth, width, activation function, normalization, and training data distribution. For these reasons, the present study does not rely on a single generic MLP architecture; instead, each gas-dynamics problem is reformulated in a manner consistent with its mathematical structure, using tools such as branch splitting, sonic-distance coordinates, bounded outputs, and hybrid analytical reconstruction to improve robustness and accuracy.
 For the class of nonlinear gas-dynamics relations considered in this study, these advantages outweigh the limitations, provided that the network architecture and input-output representation are tailored to the mathematical structure of each problem.
 
-To clarify the role of each surrogate model, Table~\ref{tab:io_summary} summarizes the principal input and output variables for all learning tasks considered in this study. Because several of the benchmark problems require both forward and inverse mappings, the table distinguishes these tasks explicitly and also indicates the main preprocessing or reformulation adopted for each case.
+To clarify the role of each surrogate model, Table~\ref{tab:io_summary} provides the compact benchmark card for \emph{GasDynBench}, the released five-problem test suite. Because several benchmark problems require both forward and inverse mappings, the table distinguishes these tasks explicitly and indicates the main preprocessing or reformulation adopted for each case.
 
 \FloatBarrier
 \begin{landscape}
@@ -169,7 +171,7 @@ To clarify the role of each surrogate model, Table~\ref{tab:io_summary} summariz
 \setlength{\tabcolsep}{5pt}
 \renewcommand{\arraystretch}{1.25}
 
-\captionof{table}{Summary of the principal input and output parameters used in the surrogate models for each gas-dynamics problem.}
+\captionof{table}{GasDynBench benchmark card: principal inputs, outputs, and structure-aware formulations for the released gas-dynamics tasks.}
 \label{tab:io_summary}
 
 \begin{tabular}{p{2.7cm} p{2.4cm} p{4.0cm} p{4.8cm} p{5.8cm}}
@@ -192,7 +194,7 @@ Rayleigh flow
 Fanno flow
 & Forward
 & $M$
-& $\{T/T^*,\,P/P^*,\,\rho/\rho^*,\,u/u^*,\,P_0/P_0^*,\,4fL^*/D\}$
+& \shortstack{$\{T/T^*,\,P/P^*,\,\rho/\rho^*\}$\\$\{u/u^*,\,P_0/P_0^*,\,4fL^*/D\}$}
 & Feature engineering using Mach-based transformed inputs \\
 
 Fanno flow
@@ -262,7 +264,7 @@ As shown in Table~\ref{tab:model_roles}, the present study does not adopt a sing
 \begin{revision}
 \begin{table}[t]
 \centering
-\caption{Reproducible training and evaluation contract used for the revised results. Inputs and transformed targets are standardized using training-set statistics.}
+\caption{Reproducible training and evaluation contract used for all reported results. Inputs and transformed targets are standardized using training-set statistics.}
 \label{tab:training_contract}
 \small
 \renewcommand{\arraystretch}{1.15}
@@ -308,7 +310,7 @@ The non-dimensional property ratios for Rayleigh flow are expressed relative to 
 
 A defining characteristic of Rayleigh flow is the behavior of the stagnation temperature, $T_0$. Heat addition increases $T_0$ until the flow chokes at $M=1$, where $T_0$ reaches its maximum possible value for a given mass flux. This results in a non-monotonic relationship between $T_0/T_0^*$ and $M$, creating a multi-valued inverse function.
 
-\rev{For the blind revision experiment, 900 analytical training states were sampled over $0.2\le M\le5.0$, with additional sampling density near the sonic state. The forward input features are $(M,\log M,M^2)$ and the positive property ratios are learned in log space. The inverse models are evaluated on a separate 900-state grid.}
+\rev{For the blind experiment, 900 analytical training states were sampled over $0.2\le M\le5.0$, with additional sampling density near the sonic state. The forward input features are $(M,\log M,M^2)$ and the positive property ratios are learned in log space. The inverse models are evaluated on a separate 900-state grid.}
 
 Consistent with the general MLP framework described above, the Rayleigh surrogate is trained as a supervised nonlinear regression model; however, because the inverse Rayleigh mapping is multi-valued, the standard feed-forward formulation is augmented here by branch decomposition into subsonic and supersonic expert networks.
 
@@ -316,7 +318,7 @@ For clarity, the Rayleigh problem is not solved using a single network that is l
 It should be emphasized that the Rayleigh models used here are data-driven MLP surrogates augmented by branch decomposition and physics-guided reformulation; they are not physics-informed neural networks in the strict PINN sense of enforcing governing equations through PDE-residual loss terms.
 
 \subsubsection{Machine Learning Algorithm: Branch Splitting Strategy}
-The primary challenge in creating a neural network surrogate for Rayleigh flow is the inverse problem: predicting the Mach number given \rev{the stagnation-temperature ratio $T_0/T_0^*$}. \rev{The submitted static-temperature option is not used in the revised inverse because $T/T^*$ reaches its maximum at $M=1/\sqrt{\gamma}$, not at the sonic state. In contrast, $T_0/T_0^*$ has its maximum at $M=1$ and therefore admits the physically meaningful subsonic/supersonic split used here.} Since \rev{this relation is} not bijective (a single temperature ratio corresponds to both a subsonic and a supersonic Mach number), a standard feed-forward network would fail to converge to a unique solution.
+The primary challenge in creating a neural network surrogate for Rayleigh flow is the inverse problem: predicting the Mach number given \rev{the stagnation-temperature ratio $T_0/T_0^*$}. \rev{Static $T/T^*$ is unsuitable for a sonic branch split because it reaches its maximum at $M=1/\sqrt{\gamma}$ rather than at the sonic state. In contrast, $T_0/T_0^*$ has its maximum at $M=1$ and therefore admits the physically meaningful subsonic/supersonic split used here.} Since \rev{this relation is} not bijective (a single temperature ratio corresponds to both a subsonic and a supersonic Mach number), a standard feed-forward network would fail to converge to a unique solution.
 
 To resolve this, we implemented a Branch Splitting Strategy:
 \begin{itemize}
@@ -325,62 +327,7 @@ To resolve this, we implemented a Branch Splitting Strategy:
 \end{itemize}
 \rev{Each Rayleigh forward or inverse model is an MLP with two hidden layers of 32 neurons and Tanh activations, trained with the common standardized L-BFGS protocol in Table~\ref{tab:training_contract}. For inversion, the input coordinate is $\sqrt{1-T_0/T_0^*}$. A logistic output coordinate maps each expert back to its admissible Mach interval, preventing a subsonic prediction from crossing into the supersonic branch and vice versa.}
 
-The Rayleigh-flow learning pipeline is summarized in Figure~\ref{fig:rayleigh_flowchart}. Exact analytical relations are first sampled to generate the synthetic dataset used for supervised learning. For the forward problem, the surrogate receives an engineered feature vector built from the Mach number and predicts the thermodynamic ratios of interest. For the inverse problem, the non-bijective mapping is resolved through branch decomposition, and two separate expert networks are trained for the subsonic and supersonic regimes. This structure avoids the ambiguity associated with the multi-valued inverse temperature relation and enables direct recovery of the physically admissible Mach number. The AI-predicted pressure and temperature ratios are further used to reconstruct the Rayleigh line on the $T$--$s$ diagram.
 
-\FloatBarrier
-\begin{landscape}
-\begin{center}
-\resizebox{0.94\linewidth}{!}{%
-\begin{tikzpicture}[node distance=1.4cm and 2.0cm]
-
-% Top chain
-\node[io] (eq) {Rayleigh analytical equations\\ $M \rightarrow \{T/T^*,\,P/P^*,\,\rho/\rho^*,\,u/u^*,\,P_0/P_0^*\}$};
-
-\node[process, below=of eq] (gen) {Generate Mach samples\\ over subsonic and supersonic domains};
-
-\node[process, below=of gen] (feat) {Feature engineering for forward model\\ $[M,\;M^2,\;1/M,\;1/M^2]$ + scaling};
-
-% Main model row
-\node[process, below left=2.2cm and 4.8cm of feat] (fwd) {Forward MLP\\[2pt]
-Input: engineered Mach features\\[2pt]
-Output: property ratios};
-
-\node[process, below=2.2cm of feat] (sub) {Subsonic inverse MLP\\[2pt]
-Input: $T_0/T_0^*$\\[2pt]
-Output: $M<1$};
-
-\node[process, below right=2.2cm and 4.8cm of feat] (sup) {Supersonic inverse MLP\\[2pt]
-Input: $T_0/T_0^*$\\[2pt]
-Output: $M>1$};
-
-% Bottom row
-\node[process, below=2.4cm of fwd, text width=6.2cm] (ts) {Thermodynamic reconstruction\\[2pt]
-on the $T$--$s$ plane from predicted\\[2pt]
-$T/T^*$ and $P/P^*$};
-
-\node[io, below=2.4cm of sub] (pred) {Instantaneous forward prediction\\[2pt]
-+ branch-wise inverse solution};
-
-% Connections
-\draw[line] (eq) -- (gen);
-\draw[line] (gen) -- (feat);
-
-\draw[line] (feat) -- (fwd);
-\draw[line] (feat) -- (sub);
-\draw[line] (feat) -- (sup);
-
-\draw[line] (fwd.south) -- (ts.north);
-\draw[line] (fwd.east) -- ++(12mm,0) |- (pred.west);
-\draw[line] (sub) -- (pred);
-\draw[line] (sup) |- (pred);
-
-\end{tikzpicture}%
-}
-\captionof{figure}{Rayleigh-flow surrogate architecture. The forward model learns the mapping from Mach number to thermodynamic property ratios using engineered Mach-based features, while the inverse problem is resolved through separate subsonic and supersonic expert networks. The forward predictions are additionally used for thermodynamic reconstruction on the $T$--$s$ plane.}
-\label{fig:rayleigh_flowchart}
-\end{center}
-\end{landscape}
-\FloatBarrier
 
 Although non-bijective inverse problems can also be addressed through more elaborate branched or multi-head neural architectures within a single model, the present study adopts separate expert networks for each physical branch. This design was chosen for interpretability, training stability, and direct correspondence with the subsonic and supersonic structure of the Rayleigh relation. In this sense, the branching strategy is implemented at the model-system level through dedicated expert surrogates rather than through a single monolithic inverse architecture.
 
@@ -396,17 +343,30 @@ Figure \ref{fig:rayleigh_comparison} presents the validation of the forward mode
     \label{fig:rayleigh_comparison}
 \end{figure}
 
-To quantify the forward behavior, Figure \ref{fig:rayleigh_error} displays the pointwise relative error for each predicted variable across the Mach-number range. \rev{The separate inverse blind-grid norms are reported in Table~\ref{tab:primary_metrics}; the revised text does not infer global robustness from a visual overlap alone.}
+\begin{revision}
+Table~\ref{tab:rayleigh_forward_error} quantifies the forward comparison. For each property vector $\mathbf y$ evaluated at 1,000 independent logarithmically spaced Mach numbers over $0.205\le M\le4.95$, the reported norms are $\|\widehat{\mathbf y}-\mathbf y\|_2/\|\mathbf y\|_2$ and $\|\widehat{\mathbf y}-\mathbf y\|_\infty/\|\mathbf y\|_\infty$. The separate inverse blind-grid norms are reported later in Table~\ref{tab:primary_metrics}.
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.9\textwidth]{Rayleigh_Error_Revised.pdf}
-    \caption{Relative error analysis for Rayleigh flow predictions. The error distribution is centered around zero with minimal variance, confirming the robustness of the ML model across the entire Mach regime.}
-    \label{fig:rayleigh_error}
-\end{figure}
+\begin{table}[H]
+\centering
+\caption{Rayleigh forward-model error on the independent 1,000-state evaluation grid.}
+\label{tab:rayleigh_forward_error}
+\small
+\begin{tabular}{lrr}
+\toprule
+Predicted ratio & Relative $L_2$ error (\%) & Relative $L_\infty$ error (\%) \\
+\midrule
+$T/T^*$       & 0.1022 & 0.1292 \\
+$P/P^*$       & 0.0521 & 0.1065 \\
+$\rho/\rho^*$ & 0.3004 & 0.7669 \\
+$u/u^*$       & 0.1294 & 0.4357 \\
+$P_0/P_0^*$   & 0.4769 & 1.1408 \\
+\bottomrule
+\end{tabular}
+\end{table}
+\end{revision}
 
 \subsubsection{The Inverse Problem}
-The inverse problem—determining the Mach number for a given temperature ratio—is a common task in gas-dynamics analysis. Since analytical inversion of the implicit Rayleigh equations is unavailable in a convenient single-valued form, users typically rely on tables or iterative solvers. Our "Expert Networks" approach provides a direct branch-declared solution. Figure \ref{fig:rayleigh_inverse} visualizes this inverse mapping. The grey line represents the analytical solution, while the red and blue dashed lines show the predictions of the subsonic and supersonic networks, respectively. \rev{The revised inverse uses the stagnation-temperature relation:}
+The inverse problem—determining the Mach number for a given temperature ratio—is a common task in gas-dynamics analysis. Since analytical inversion of the implicit Rayleigh equations is unavailable in a convenient single-valued form, users typically rely on tables or iterative solvers. Our "Expert Networks" approach provides a direct branch-declared solution. Figure \ref{fig:rayleigh_inverse} visualizes this inverse mapping. The grey line represents the analytical solution, while the red and blue dashed lines show the predictions of the subsonic and supersonic networks, respectively. \rev{The inverse uses the stagnation-temperature relation:}
 
 \begin{equation}
     \frac{T_0}{T_0^*} = \frac{2(\gamma+1)M^2\left(1+\frac{\gamma-1}{2}M^2\right)}{(1+\gamma M^2)^2}.
@@ -448,13 +408,13 @@ The analytical relations for property ratios with respect to the sonic reference
     \frac{P_0}{P_0^*} &= \frac{1}{M} \left( \frac{2+(\gamma-1)M^2}{\gamma+1} \right)^{\frac{\gamma+1}{2(\gamma-1)}} \\
     \frac{4fL^*}{D} &= \frac{1-M^2}{\gamma M^2} + \frac{\gamma+1}{2\gamma} \ln\left( \frac{(\gamma+1)M^2}{2+(\gamma-1)M^2} \right)
 \end{align}
-\rev{The revised experiment uses 900 analytical training states over $0.2\le M\le5.0$, combining logarithmic Mach sampling with additional points near $M=1$. The inverse test grid contains 1,040 independent states and is logarithmically refined near the sonic limit.}
+\rev{The experiment uses 900 analytical training states over $0.2\le M\le5.0$, combining logarithmic Mach sampling with additional points near $M=1$. The inverse test grid contains 1,040 independent states and is logarithmically refined near the sonic limit.}
 
 \subsubsection{Machine Learning Architecture}
 Within the general MLP framework introduced earlier, the Fanno problem requires additional target and feature transformations because the friction parameter spans several orders of magnitude and approaches zero quadratically at $M=1$. As in the Rayleigh case, the Fanno problem is decomposed into distinct forward and inverse learning tasks rather than being handled through a single universal network.
 
 \begin{revision}
-The revised forward formulation imposes the known sonic structure explicitly,
+The forward formulation imposes the known sonic structure explicitly,
 \begin{equation}
 \widehat{\frac{4fL^*}{D}}=(M-1)^2\exp[g_\theta(M)],
 \label{eq:fanno_positive_transform}
@@ -462,48 +422,11 @@ The revised forward formulation imposes the known sonic structure explicitly,
 where $g_\theta$ is learned from the features $(M,\log M,M^2)$. Equation~\ref{eq:fanno_positive_transform} makes the prediction non-negative and exactly zero at $M=1$. The four positive thermodynamic ratios are learned in logarithmic coordinates. For inversion, two $32\times32$ Tanh experts receive $\sqrt{4fL^*/D}$ and return bounded Mach coordinates on the subsonic and supersonic intervals. The same optimizer and stopping criteria as Table~\ref{tab:training_contract} are used. This representation, rather than a claim of universal superiority for a particular activation function, is the principal source of near-sonic stability.
 \end{revision}
 
-Figure~\ref{fig:fanno_flowchart} summarizes the workflow adopted for Fanno flow. Because the friction parameter spans several orders of magnitude and vanishes quadratically at the sonic state, the learning pipeline combines feature engineering, the exact positive envelope in Equation~\ref{eq:fanno_positive_transform}, and regime decomposition. For the inverse problem, the regularized square-root coordinate is supplied to two independently trained bounded experts.
 
-\FloatBarrier
-\begin{landscape}
-\begin{center}
-\resizebox{0.92\linewidth}{!}{%
-\begin{tikzpicture}[node distance=1.3cm and 1.8cm]
-\node[io] (eq) {Fanno analytical relations\\ $M \rightarrow \{T/T^*,P/P^*,\rho/\rho^*,u/u^*,P_0/P_0^*,4fL^*/D\}$};
-\node[process, below=of eq] (gen) {Generate dense samples with\\ refined coverage near $M=1$};
-\node[process, below=of gen] (feat) {Feature engineering and scaling\\ Forward features: e.g. $[M,1/M,\log M]$ or\\ $[M,M^2,1/M,\log M]$};
-
-\node[process, below left=1.9cm and 3.0cm of feat] (fwd) {Forward MLP\\ Output: property ratios and friction parameter};
-\node[process, below=1.9cm of feat] (logt) {Impose sonic envelope\\ $4fL^*/D=(M-1)^2\exp g_\theta(M)$};
-\node[process, below right=1.9cm and 3.0cm of feat] (ts) {Entropy reconstruction\\ and process path on Fanno line};
-
-\node[process, below left=1.8cm and 1.5cm of logt] (sub) {Subsonic inverse MLP\\ Input: $\sqrt{4fL^*/D}$\\ Output: bounded $M<1$};
-\node[process, below right=1.8cm and 1.5cm of logt] (sup) {Supersonic inverse MLP\\ Input: $\sqrt{4fL^*/D}$\\ Output: bounded $M>1$};
-
-\node[io, below=4.9cm of logt] (out) {Direct forward prediction\\ + branch-wise inverse Mach recovery};
-
-\draw[line] (eq) -- (gen);
-\draw[line] (gen) -- (feat);
-\draw[line] (feat) -- (fwd);
-\draw[line] (feat) -- (logt);
-\draw[line] (feat) -- (ts);
-\draw[line] (logt) -- (sub);
-\draw[line] (logt) -- (sup);
-\draw[line] (fwd) |- (out);
-\draw[line] (sub) -- (out);
-\draw[line] (sup) -- (out);
-\draw[line] (ts) |- (out);
-\end{tikzpicture}%
-}
-\captionof{figure}{Fanno-flow surrogate architecture. The forward network learns positive thermodynamic ratios and the residual function inside an exact quadratic sonic envelope. The inverse uses the regularized coordinate $\sqrt{4fL^*/D}$ and separate bounded subsonic and supersonic expert networks.}
-\label{fig:fanno_flowchart}
-\end{center}
-\end{landscape}
-\FloatBarrier
 
 \subsubsection{Results: Property Ratios}
 
-Figure \ref{fig:fanno_ratios} compares the revised direct neural-network predictions with the analytical Fanno ratios over $0.2\le M\le5.0$. Quantitative blind inverse errors and physical diagnostics are reported in Tables~\ref{tab:primary_metrics} and~\ref{tab:ablation_physics} rather than inferred from visual overlap alone.
+Figure \ref{fig:fanno_ratios} compares the direct neural-network predictions with the analytical Fanno ratios over $0.2\le M\le5.0$. Quantitative blind inverse errors and physical diagnostics are reported in Tables~\ref{tab:primary_metrics} and~\ref{tab:ablation_physics} rather than inferred from visual overlap alone.
 
 The physical interpretation of the plots indicates that the temperature ratio for an ideal gas with $\gamma = 1.4$ starts from about 1.2 at the stagnant state and decreases monotonically as Mach number increases. This is expected because, in Fanno flow with constant total enthalpy, friction accelerates the flow and increases the kinetic energy; consequently, the static temperature must decrease to satisfy energy conservation.
 
@@ -547,7 +470,7 @@ In practical engineering design, the duct geometry (length $L$ and diameter $D$)
 
 Equation \ref{eq:fanno_friction} is highly non-linear and implicit with respect to $M$. Conventional methods rely on iterative numerical solvers (e.g., Newton-Raphson) or look-up tables to solve for $M$, which can be computationally expensive in large-scale simulations. Furthermore, the function is non-bijective; for a given value of the friction parameter (limit $\frac{4fL^*}{D} < \frac{4fL^*_{max}}{D}$), there exist two distinct mathematical solutions for $M$: one in the subsonic regime ($M < 1$) and one in the supersonic regime ($M > 1$).
 
-To address this ill-posedness and eliminate iterative costs, we propose a domain-decomposed neural approach. The solution space is split into subsonic and supersonic regimes. \rev{Two specialized experts learn $\mathcal{F}^{-1}:\sqrt{4fL^*/D}\rightarrow M$ and map their latent outputs into their respective admissible Mach intervals. The square-root input follows the local quadratic sonic behavior and remains finite at choking.}
+To address this ill-posedness and eliminate iterative costs, we propose a domain-decomposed neural approach. The solution space is split into subsonic and supersonic regimes. \rev{Two specialized experts learn an inverse relation whose input is $\sqrt{4fL^*/D}$ and whose output is $M$. Their latent outputs are mapped into the respective admissible Mach intervals. The square-root input follows the local quadratic sonic behavior and remains finite at choking.}
 
 For quantitative validation of the inverse surrogate, Figure~\ref{fig:inverse_fanno} compares the branch-wise neural-network predictions against the analytical Fanno relation over both the subsonic and supersonic regimes. The logarithmic horizontal axis highlights the wide dynamic range of the friction parameter and demonstrates that the learned inverse mappings remain accurate both near the choking point and in the asymptotic low-Mach region.
 
@@ -614,7 +537,7 @@ Standard data-driven regression models often struggle to enforce exact boundary 
 \end{equation}
 
 \begin{revision}
-In the submitted prototype, analytical endpoint samples acted as \emph{soft} data anchors; they were not hard constraints. The revised direct model instead defines $q=(\beta-\mu)/(\pi/2-\mu)$ and
+Endpoint samples alone act as \emph{soft} data anchors rather than hard constraints. The direct model therefore defines $q=(\beta-\mu)/(\pi/2-\mu)$ and
 \begin{equation}
 \widehat{\theta}=q(1-q)\exp[h_\theta(M,q)],
 \label{eq:oblique_envelope}
@@ -622,53 +545,7 @@ In the submitted prototype, analytical endpoint samples acted as \emph{soft} dat
 which enforces $\widehat{\theta}=0$ at both the Mach-wave and normal-shock endpoints. The inverse task is learned separately: a $64\times64$ Tanh MLP returns weak and strong latent coordinates that are mapped into $(\mu,\pi/2)$ and checked for the ordering $\beta_{\rm weak}<\beta_{\rm strong}$. A naive single-output inverse receives duplicate $(M,\theta)$ inputs paired with incompatible labels and therefore averages between branches; the quantitative ablation is given in Table~\ref{tab:ablation_physics}.
 \end{revision}
 
-The workflow used for the oblique-shock surrogate is summarized in Figure~\ref{fig:oblique_flowchart}. Because the $\beta$--$\theta$--$M$ manifold is bounded by strict physical limits and exhibits solution duality, the learning pipeline combines analytical data generation, an exact direct-map envelope, and separate weak/strong inverse outputs.
 
-\FloatBarrier
-\begin{landscape}
-\begin{center}
-\resizebox{0.92\linewidth}{!}{%
-\begin{tikzpicture}[node distance=1.35cm and 1.8cm]
-
-% Top chain
-\node[io] (eq) {Analytical oblique-shock relation\\ $(M,\beta)\rightarrow \theta$};
-
-\node[process, below=of eq] (sample) {Sample valid physical domain\\ $\mu(M)<\beta<90^\circ$};
-
-\node[process, below=of sample] (anchor) {Normalize shock angle\\ $q=(\beta-\mu)/(\pi/2-\mu)$};
-
-\node[process, below=of anchor] (feat) {Hard direct-map envelope\\ $\widehat\theta=q(1-q)\exp h_\theta(M,q)$};
-
-% Middle row
-\node[process, below left=2.2cm and 4.2cm of feat] (train) {Tanh MLP training\\ Input: $(M,q)$\\ Output: direct $\theta$};
-
-\node[process, below=2.2cm of feat] (recon) {Weak/strong inverse experts\\ Input: $(M,\theta/\theta_{\max})$\\ Output: $(\beta_w,\beta_s)$};
-
-\node[process, below right=2.2cm and 4.2cm of feat] (check) {Physical consistency checks\\ Mach-wave limit, weak/strong branches,\\ and $\theta_{\max}$ locus};
-
-% Bottom output
-\node[io, below=2.5cm of recon] (out) {AI-generated shock polars\\ and reconstructed $\beta$--$\theta$--$M$ diagram};
-
-% Arrows
-\draw[line] (eq) -- (sample);
-\draw[line] (sample) -- (anchor);
-\draw[line] (anchor) -- (feat);
-
-\draw[line] (feat) -- (train);
-\draw[line] (feat) -- (recon);
-\draw[line] (feat) -- (check);
-
-\draw[line] (train) |- (out);
-\draw[line] (recon) -- (out);
-\draw[line] (check) |- (out);
-
-\end{tikzpicture}%
-}
-\captionof{figure}{Oblique-shock surrogate workflow. The direct map uses an exact endpoint envelope, while separate bounded inverse outputs represent the weak and strong branches.}
-\label{fig:oblique_flowchart}
-\end{center}
-\end{landscape}
-\FloatBarrier
 
 The network architecture for the oblique-shock surrogate was selected to provide sufficient expressive capacity for the strongly curved $\beta$--$\theta$--$M$ manifold while maintaining training stability. \rev{The direct and inverse models use 900 analytical training states and the common protocol in Table~\ref{tab:training_contract}.}
 
@@ -691,7 +568,7 @@ Three key performance indicators are evident in these results:
 \begin{figure}[H]
     \centering
     \includegraphics[width=1.0\textwidth]{Oblique_Manifold_Revised.pdf}
-    \caption{The revised $\beta$--$\theta$--$M$ diagram. Dashed curves are the hard-envelope surrogate and solid curves are the analytical relation; both physical endpoints are imposed exactly.}
+    \caption{Constrained $\beta$--$\theta$--$M$ diagram. Dashed curves are the hard-envelope surrogate and solid curves are the analytical relation; both physical endpoints are imposed exactly.}
     \label{fig:beta_theta}
 \end{figure}
 
@@ -723,10 +600,10 @@ Since the shock strength depends entirely on the Mach number immediately upstrea
 
 \subsubsection{ML Strategy: Design Space Mapping}
 
-To bypass the iterative computational cost and provide immediate design feedback, we formulated the shock location problem as a direct regression task. We trained a Deep Neural Network (DNN) to approximate the inverse function $\mathcal{F}^{-1}$:
+To bypass the iterative computational cost and provide immediate design feedback, we formulated the shock location problem as a direct regression task. We trained an MLP to approximate the inverse function $\mathcal{F}^{-1}$:
 
 \begin{equation}
-    \frac{A_s}{A_t} \approx \text{DNN}\left( \frac{A_e}{A_t}, \frac{P_b}{P_{01}} \right)
+    \frac{A_s}{A_t} \approx \text{MLP}\left( \frac{A_e}{A_t}, \frac{P_b}{P_{01}} \right)
 \end{equation}
 
 The network maps the design constraints (geometry and back pressure) directly to the physical response (shock area).
@@ -740,55 +617,7 @@ The $64\times64$ Tanh model is trained on 900 analytical states and tested on 89
 \end{revision}
 This approach "flattens" the iterative physics solver into a single forward-pass operation. \rev{Measured batch timing, rather than an assumed microsecond claim, is reported in Table~\ref{tab:baseline_timing}.}
 
-The workflow adopted for the convergent-divergent nozzle surrogate is summarized in Figure~\ref{fig:nozzle_flowchart}. Instead of learning the full flow field directly, the neural network is trained as an inverse shock-location predictor that maps nozzle geometry and back pressure to the shock position inside the divergent section.
 
-\FloatBarrier
-\begin{landscape}
-\begin{center}
-\resizebox{0.90\linewidth}{!}{%
-\begin{tikzpicture}[node distance=1.35cm and 1.8cm]
-
-% Top chain
-\node[io] (sample) {Sample nozzle geometry and shock location\\ $(A_e/A_t,\;A_s/A_t)$};
-
-\node[process, below=of sample] (physics) {Analytical nozzle physics\\ compute back-pressure ratio $P_b/P_{01}$\\ from isentropic flow + normal shock};
-
-\node[process, below=of physics] (dataset) {Build inverse dataset\\ Input: $(A_e/A_t,\;P_b/P_{01})$\\ Target: $A_s/A_t$};
-
-\node[process, below=of dataset] (scale) {Input scaling / preprocessing};
-
-% Middle row
-\node[process, below left=2.2cm and 4.2cm of scale] (train) {Bounded regression network\\ Input: $(A_e/A_t,\;P_b/P_{01})$\\ Output: $1<A_s/A_t<A_e/A_t$};
-
-\node[process, below=2.2cm of scale] (heatmap) {Evaluate model over parameter grid\\ generate shock-location heatmap};
-
-\node[process, below right=2.2cm and 4.2cm of scale] (recon) {Use predicted shock location\\ for analytical pressure reconstruction};
-
-% Bottom output
-\node[io, below=2.5cm of heatmap] (out) {Instantaneous shock-location prediction\\ + design-space heatmap + pressure profile};
-
-% Arrows
-\draw[line] (sample) -- (physics);
-\draw[line] (physics) -- (dataset);
-\draw[line] (dataset) -- (scale);
-
-\draw[line] (scale) -- (train);
-\draw[line] (scale) -- (heatmap);
-\draw[line] (scale) -- (recon);
-
-\draw[line] (train.south) -- ++(0,-8mm) -| (out.west);
-\draw[line] (heatmap.south) -- (out.north);
-\draw[line] (recon.south) -- ++(0,-8mm) -| (out.east);
-
-\end{tikzpicture}%
-}
-\captionof{figure}{Workflow of the neural-network surrogate for normal-shock location in a convergent-divergent nozzle. Synthetic inverse-design data are generated analytically by sampling nozzle geometries and shock locations, then computing the corresponding back-pressure ratio. A regression network is trained to predict the shock location directly from nozzle geometry and back pressure, and the trained model is subsequently used for real-time design-space heatmaps and analytical pressure-profile reconstruction.}
-\label{fig:nozzle_flowchart}
-\end{center}
-\end{landscape}
-\FloatBarrier
-
-As shown in Figure~\ref{fig:nozzle_flowchart}, the nozzle problem is formulated as an inverse regression task rather than a full field-prediction problem. Synthetic training data are generated by sampling a nozzle area ratio and an admissible internal shock location, then evaluating the corresponding back-pressure ratio through the exact sequence of isentropic expansion, normal-shock compression, and subsonic diffusion. The neural network is subsequently trained to approximate the inverse mapping from geometry and back pressure to shock location. Once trained, the model enables both immediate shock-position prediction and rapid post-processing tasks such as design-space heatmap generation and analytical pressure-distribution reconstruction.
 
 
 \subsubsection{Visualization: The Shock Location Heatmap}
@@ -800,7 +629,7 @@ The speed of the AI solver enables the real-time generation of a "Design Heatmap
 This visualization highlights several critical flow regimes:
 \begin{itemize}
     \item The Valid Shock Domain: The colored region represents the specific combinations of geometry and pressure where a normal shock can physically exist inside the nozzle.
-    \item he Throat Limit ($A_s \to A_t$): As back pressure increases (moving up the y-axis), the shock is pushed upstream towards the throat. The heatmap clearly shows the boundary where the shock vanishes and the nozzle unchokes (First Critical Point).
+    \item The Throat Limit ($A_s \to A_t$): As back pressure increases (moving up the y-axis), the shock is pushed upstream towards the throat. The heatmap clearly shows the boundary where the shock vanishes and the nozzle unchokes (First Critical Point).
     \item The Exit Limit ($A_s \to A_e$): As back pressure decreases, the shock moves downstream. The lower boundary of the heatmap corresponds to the "Third Critical Point," where the normal shock sits exactly at the exit plane. Below this line, the flow becomes over-expanded with oblique shocks outside the nozzle.
 \end{itemize}
 
@@ -809,7 +638,7 @@ By exploring this heatmap, users can intuitively grasp how sensitive the shock p
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.9\textwidth]{design_heatmap.png}
-    \caption{Design-space map retained from the submitted manuscript. Nozzle exit-area ratio is on the horizontal axis, back-pressure ratio on the vertical axis, and color denotes the predicted internal shock location.}
+    \caption{Design-space map of the internal shock location. Nozzle exit-area ratio is on the horizontal axis, back-pressure ratio on the vertical axis, and color denotes the predicted internal shock location.}
     \label{fig:nozzle_heatmap}
 \end{figure}
 
@@ -822,7 +651,7 @@ The plot clearly illustrates the sequence of flow processes: isentropic expansio
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=1.0\textwidth]{pressure_comparison_final (1).png}
+    \includegraphics[width=1.0\textwidth]{Nozzle_Pressure_Profiles.png}
     \caption{Pressure distribution along the nozzle axis. The solid lines represent the exact analytical solution, while dashed lines represent the AI reconstruction. The model accurately predicts the shock position for various back-pressures.}
     \label{fig:nozzle_pressure}
 \end{figure}
@@ -844,7 +673,7 @@ Where $a$ denotes the speed of sound and $\gamma$ is the specific heat ratio. Eq
 
 To address the implicit nature of Equation \ref{eq:shock_tube_implicit} without incurring the computational cost of iterative solvers, we developed a "Hybrid AI-Analytical Solver." 
 
-In this architecture, a lightweight Deep Neural Network serves as a direct function approximator for the inverse of the shock tube equation. The network takes the initial conditions ($P_4/P_1, T_4/T_1$) as inputs and predicts the shock strength $P_2/P_1$. \rev{Both inputs vary in the revised dataset: $P_4/P_1\in[1.5,300]$ and $T_4/T_1\in[0.5,2]$.}
+In this architecture, a lightweight MLP serves as a direct function approximator for the inverse of the shock tube equation. The network takes the initial conditions ($P_4/P_1, T_4/T_1$) as inputs and predicts the shock strength $P_2/P_1$. \rev{Both inputs vary in the dataset: $P_4/P_1\in[1.5,300]$ and $T_4/T_1\in[0.5,2]$.}
 
 Crucially, the AI is not tasked with predicting the entire flow field pixel-by-pixel, which often leads to blurred discontinuities in pure computer vision approaches. Instead, the AI output ($P_2/P_1$) is fed into a deterministic analytical reconstruction module. Once $P_2$ is known, the properties in all other regions (Region 2 behind the shock and Region 3 behind the contact surface) become explicit algebraic calculations:
 
@@ -864,50 +693,7 @@ so the predicted pressure lies strictly between the initial driven and driver pr
 
 A lightweight neural architecture was sufficient for the shock-tube surrogate because the network is used only for the implicit shock-strength subproblem, while the remaining thermodynamic states and wave trajectories are reconstructed analytically. \rev{The model has two hidden layers of 64 Tanh units, uses 900 training states, and is tested on a 960-state two-parameter grid.}
 
-The workflow used for the shock-tube surrogate is summarized in Figure~\ref{fig:shocktube_flowchart}. Rather than predicting the full flow field directly, the neural network learns only the implicit algebraic step associated with shock strength, while the complete spatiotemporal solution is recovered analytically.
 
-\FloatBarrier
-\begin{landscape}
-\begin{center}
-\resizebox{0.92\linewidth}{!}{%
-\begin{tikzpicture}[node distance=1.35cm and 1.8cm]
-
-% Top chain
-\node[io] (eq) {Shock-tube implicit relation\\ $(P_4/P_1,\;T_4/T_1)\rightarrow P_2/P_1$};
-
-\node[process, below=of eq] (data) {Generate training data\\ from exact root-finding / analytical solver};
-
-\node[process, below=of data] (prep) {Input transformation and scaling\\ e.g. $\log_{10}(P_4/P_1)$};
-
-% Middle row
-\node[process, below left=2.2cm and 4.2cm of prep] (train) {Lightweight neural network\\ Input: initial diaphragm conditions\\ Output: shock strength $P_2/P_1$};
-
-\node[process, below=2.2cm of prep] (recon) {Analytical reconstruction\\ regions 1--4, contact surface,\\ shock and expansion-wave locations};
-
-\node[process, below right=2.2cm and 4.2cm of prep] (xt) {Vectorized evaluation over\\ space and time grids\\ for $x$--$t$ contour generation};
-
-% Bottom output
-\node[io, below=2.5cm of recon] (out) {Hybrid AI--analytical shock-tube solver\\ instantaneous profiles + wave-history plots};
-
-% Arrows
-\draw[line] (eq) -- (data);
-\draw[line] (data) -- (prep);
-
-\draw[line] (prep) -- (train);
-\draw[line] (prep) -- (recon);
-\draw[line] (prep) -- (xt);
-
-\draw[line] (train) |- (out);
-\draw[line] (recon) -- (out);
-\draw[line] (xt) |- (out);
-
-\end{tikzpicture}%
-}
-\captionof{figure}{Hybrid AI--analytical workflow for the shock-tube surrogate. Training data are generated from the exact implicit shock-tube relation. The neural network is trained only to predict the shock strength from the initial diaphragm state, while the remaining thermodynamic states and wave trajectories are reconstructed analytically. This hybrid design enables both instantaneous flow-profile prediction and rapid generation of space--time wave diagrams.}
-\label{fig:shocktube_flowchart}
-\end{center}
-\end{landscape}
-\FloatBarrier
 
 
 \subsubsection{Results: Flow Field and Wave Propagation}
@@ -1046,7 +832,7 @@ Shock-tube implicit step & 97.4\% & 1.26e-4 & 9.490e-4 \\
 \end{tabular}
 \end{table}
 
-The resulting surrogates are most useful in many-query settings. Table~\ref{tab:baseline_timing} reports warm-started median CPU times from seven repeats for 5,000 queries. Batched MLP inference is 96--1057 times faster than repeated Brent solves, while interpolation remains approximately 4--11 times faster than the MLP. Offline analytical data generation and model fitting are excluded from these online timings and must be amortized.
+The resulting surrogates are most useful in many-query settings. Table~\ref{tab:baseline_timing} reports warm-started median CPU times from seven repeats for 5,000 queries. Batched MLP inference is 96--1057 times faster than repeated Brent solves, while interpolation remains approximately 4--11 times faster than the MLP. \rev{For a single query, the bracketed root is comparable and is faster than the MLP for Rayleigh and oblique-shock inversion; the neural speedup is therefore a batching effect rather than a universal per-query advantage.} Offline analytical data generation and model fitting are excluded from these online timings and must be amortized.
 
 \begin{table}[H]
 \centering
@@ -1085,6 +871,39 @@ $d$ & Grid nodes/axis & Grid states & Interp. $L_2$ (\%) & MLP $L_2$ (\%) & Grid
 \end{tabular}
 \end{table}
 
+Two compact application-level checks test benefits that are not captured by pointwise accuracy alone. First, the analytical Jacobian of the two-layer Tanh nozzle MLP, including its input/output scaling and bounded sigmoid transform, is used in a safeguarded Newton iteration to find the back pressure that places the shock at a prescribed location. Table~\ref{tab:nozzle_gradient} summarizes three target locations for each of three nozzle geometries. The surrogate objective converges in at most six steps, and the analytical Jacobian agrees with centered finite differences to $2.41\times10^{-10}$ in relative terms. The back-pressure discrepancy reflects surrogate error against the exact nozzle relation, not differentiation error.
+
+\begin{table}[H]
+\centering
+\caption{Gradient-based inverse nozzle design over nine prescribed shock-location cases.}
+\label{tab:nozzle_gradient}
+\footnotesize
+\begin{tabular}{rrrrr}
+\toprule
+Cases & Max. iterations & Max. shock-target error & Max. $P_b/P_{01}$ error & Max. Jacobian discrepancy \\
+\midrule
+9 & 6 & $6.83\times10^{-9}$ & $1.24\times10^{-3}$ & $2.41\times10^{-10}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Second, a prescribed 100,000-state shock-tube workload samples $P_4/P_1$ and $T_4/T_1$ log-uniformly over the declared model domain. Table~\ref{tab:shocktube_workload} reports the resulting shock-strength distribution and total CPU time. The MLP is 14.3 times faster than one bracketed solve per state, with relative $L_2$ error 0.158\% and 100\% valid pressure bounds. This is a deterministic propagation benchmark rather than calibrated probabilistic uncertainty quantification.
+
+\begin{table}[H]
+\centering
+\caption{Prescribed 100,000-state shock-tube workload. Distribution columns report $P_2/P_1$.}
+\label{tab:shocktube_workload}
+\small
+\begin{tabular}{lrrrrr}
+\toprule
+Method & Time (s) & Mean & 5th percentile & Median & 95th percentile \\
+\midrule
+Bracketed Brent & 1.706 & 4.2596 & 1.3773 & 3.7274 & 9.0311 \\
+Physics-guided MLP & 0.119 & 4.2594 & 1.3772 & 3.7260 & 9.0334 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 The practical conclusion is narrow. For a fixed, covered one-dimensional table, PCHIP is generally the better numerical tool. A structured MLP becomes attractive when the surrounding workflow benefits from exact output bounds, branch-aware differentiability, compact storage, full declared-domain coverage, batching, or several varying physical inputs. The present dimensional audit supports this trend through five inputs but does not establish dimension-independent superiority.
 
 \subsection{Limitations}
@@ -1098,7 +917,7 @@ This work developed a compact physics-guided neural-surrogate framework for five
 
 The results show that the most important ingredient is not network complexity alone, but the formulation of the learning task. Branch-wise expert models resolve the non-unique inverse mappings in Rayleigh and Fanno flows; the positive quadratic transform stabilizes the Fanno sonic limit; an exact output envelope preserves the oblique-shock endpoints; and bounded hybrid AI--analytical reconstruction keeps nozzle-shock and shock-tube predictions within their stated admissible intervals. \rev{Blind relative $L_2$ errors remain below $3.5\times10^{-3}$ for all five inverse tasks, while the controlled ablations expose failures of the corresponding naive MLPs.}
 
-The present framework is intentionally restricted to canonical relations with analytically generated reference data. It should therefore be viewed as a fast, interpretable benchmark and inverse-analysis tool rather than a replacement for high-fidelity CFD or kinetic solvers in complex multidimensional flows. At the same time, this restriction is also a strength: the benchmark is fully reproducible, physically transparent, and free from uncertainty associated with mesh resolution or stochastic solver noise. In this sense, the study provides a reproducible benchmark for the thermal-fluids SciML community and a set of ready-to-embed surrogate components for design and optimization tools. \rev{For fixed one-dimensional lookup tables, classical interpolation remains faster and more accurate. The neural formulation is justified when branch-aware constraints, differentiability, complete declared-domain coverage, compact multi-input storage, or batched evaluation against repeated implicit solves is useful. The two-to-five-dimensional shock-tube extension supports this limited dimensional advantage without making it the theme of the work.} The same principles---physics-guided features, branch decomposition, constrained learning, and hybrid reconstruction---provide a natural bridge toward more advanced thermal-fluid surrogate models for shock interactions, viscous compressible flows, reacting flows, real-gas effects, CFD-coupled reduced-order models, and rarefied nonequilibrium systems.
+The present framework is intentionally restricted to canonical relations with analytically generated reference data. It should therefore be viewed as a fast, interpretable benchmark and inverse-analysis tool rather than a replacement for high-fidelity CFD or kinetic solvers in complex multidimensional flows. At the same time, this restriction is also a strength: the benchmark is fully reproducible, physically transparent, and free from uncertainty associated with mesh resolution or stochastic solver noise. In this sense, the study provides a reproducible benchmark for the thermal-fluids SciML community and a set of ready-to-embed surrogate components for design and optimization tools. \rev{For fixed one-dimensional lookup tables, classical interpolation remains faster and more accurate. The neural formulation is justified when branch-aware constraints, differentiability, complete declared-domain coverage, compact multi-input storage, or batched evaluation against repeated implicit solves is useful. The two-to-five-dimensional shock-tube extension, analytical-gradient nozzle inversion, and 100,000-state workload demonstrate these limited advantages without making them the theme of the work.} The same principles---physics-guided features, branch decomposition, constrained learning, and hybrid reconstruction---provide a natural bridge toward more advanced thermal-fluid surrogate models for shock interactions, viscous compressible flows, reacting flows, real-gas effects, CFD-coupled reduced-order models, and rarefied nonequilibrium systems.
 
 \subsection*{Data availability}
 
@@ -1106,7 +925,7 @@ The datasets used in this study were generated synthetically from the analytical
 
 \subsection*{Code availability}
 
-The Python scripts for data generation, neural-network training, inference, post-processing, and the dimensional scaling audit are available from the project repository: \url{https://github.com/Ehsan-Roohi/GasDynamicsSciML}. The repository contains the generated CSV evidence and tests for all five cases.
+The project repository provides scripts for data generation, neural-network training, inference, post-processing, and the dimensional and application-level audits: \url{https://github.com/Ehsan-Roohi/GasDynamicsSciML}. It also contains the generated CSV evidence and tests for all five cases.
 
 \subsection*{Author contributions}
 
