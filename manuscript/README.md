@@ -1,16 +1,32 @@
 # Manuscript files
 
-- `main_revised_highlighted.tex`: wrapper that renders all revised text in blue.
-- `main_revised_clean.tex`: clean wrapper for the same source.
-- `main_revised_body.tex`: single source of truth for both manuscript variants.
-- `response_to_reviewers.tex`: point-by-point response for AITF-D-26-00044.
+The revision now uses the exact submitted Elsevier source as its base. Its
+title, section order, equations, and scientific figure sequence are retained;
+reviewer-requested corrections are applied in place.
 
-Compile from the repository root so the generated figures resolve correctly:
+- `main.tex`: blue-highlighted revision of the submitted source.
+- `main_clean.tex`: clean wrapper for the same `main.tex` source.
+- `ref.bib`: submitted bibliography plus reviewer-requested references.
+- `response_to_reviewers.tex`: point-by-point response for AITF-D-26-00044.
+- `*_Revised.pdf`: corrected vector figures for Rayleigh, Fanno, and oblique
+  mappings. The submitted nozzle, shock-tube, and Fanno process figures remain.
+
+Compile from `manuscript/` with pdfLaTeX and BibTeX:
 
 ```bash
-mkdir -p manuscript/build
-pdflatex -interaction=nonstopmode -halt-on-error -output-directory manuscript/build manuscript/main_revised_highlighted.tex
-pdflatex -interaction=nonstopmode -halt-on-error -output-directory manuscript/build manuscript/main_revised_clean.tex
-pdflatex -interaction=nonstopmode -halt-on-error -output-directory manuscript/build manuscript/response_to_reviewers.tex
+pdflatex -interaction=nonstopmode -halt-on-error main.tex
+bibtex main
+pdflatex -interaction=nonstopmode -halt-on-error main.tex
+pdflatex -interaction=nonstopmode -halt-on-error main.tex
+
+pdflatex -interaction=nonstopmode -halt-on-error -jobname=main_clean main_clean.tex
+bibtex main_clean
+pdflatex -interaction=nonstopmode -halt-on-error -jobname=main_clean main_clean.tex
+pdflatex -interaction=nonstopmode -halt-on-error -jobname=main_clean main_clean.tex
+
+pdflatex -interaction=nonstopmode -halt-on-error response_to_reviewers.tex
 ```
 
+Accuracy, ablations, timing, uncertainty, edge holdout, and dimensional scaling
+are reported as tables. No new benchmark bar chart or dashboard figure is used
+in the article.
