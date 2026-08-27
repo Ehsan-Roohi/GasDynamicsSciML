@@ -1,6 +1,6 @@
 # GasDynamicsSciML
 
-[![validation](https://github.com/Ehsan-Roohi/Gas-Dynamics-/actions/workflows/ci.yml/badge.svg)](https://github.com/Ehsan-Roohi/Gas-Dynamics-/actions/workflows/ci.yml)
+[![validation](https://github.com/Ehsan-Roohi/GasDynamicsSciML/actions/workflows/ci.yml/badge.svg)](https://github.com/Ehsan-Roohi/GasDynamicsSciML/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 Reproducible physics-guided neural benchmarks for five canonical compressible-flow relations:
