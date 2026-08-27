@@ -179,43 +179,75 @@ def nozzle_shock_area(exit_area_ratio: float, back_pressure: float,
     return brentq(fn, 1.0 + 1.0e-8, exit_area_ratio - 1.0e-8)
 
 
-def shock_tube_pressure_ratio(p4_p1: float, t4_t1: float = 1.0,
-                              gamma: float = GAMMA) -> float:
-    """Solve the ideal-gas shock-tube pressure ratio P2/P1 robustly."""
-    if p4_p1 <= 1.0 or t4_t1 <= 0.0:
-        raise ValueError("Require P4/P1 > 1 and T4/T1 > 0.")
-    a1_a4 = math.sqrt(1.0 / t4_t1)
+def shock_tube_pressure_ratio_general(
+        p4_p1: float, t4_t1: float = 1.0, gamma1: float = GAMMA,
+        gamma4: float = GAMMA, r4_r1: float = 1.0) -> float:
+    """Return P2/P1 for an ideal shock tube with distinct driver/driven gases.
+
+    The five physical inputs are the initial pressure and temperature ratios,
+    the driven- and driver-gas heat-capacity ratios, and R4/R1.  The classical
+    equal-gas relation is recovered when gamma1=gamma4 and R4/R1=1.
+    """
+    if p4_p1 <= 1.0 or t4_t1 <= 0.0 or r4_r1 <= 0.0:
+        raise ValueError("Require P4/P1 > 1 and positive T4/T1 and R4/R1.")
+    if gamma1 <= 1.0 or gamma4 <= 1.0:
+        raise ValueError("Heat-capacity ratios must exceed one.")
+    a1_a4 = math.sqrt(gamma1 / (gamma4 * r4_r1 * t4_t1))
+    coefficient = (gamma4 - 1.0) * a1_a4
 
     def residual(p2_p1: float) -> float:
-        term = (gamma - 1.0) * a1_a4 * (p2_p1 - 1.0)
-        term /= math.sqrt(2.0 * gamma * (2.0 * gamma + (gamma + 1.0) * (p2_p1 - 1.0)))
-        base = 1.0 - term
+        delta = p2_p1 - 1.0
+        denominator = math.sqrt(
+            2.0 * gamma1 * (2.0 * gamma1 + (gamma1 + 1.0) * delta)
+        )
+        base = 1.0 - coefficient * delta / denominator
         if base <= 0.0:
             return math.inf
-        predicted = p2_p1 * base ** (-2.0 * gamma / (gamma - 1.0))
-        return predicted - p4_p1
+        log_predicted = math.log(p2_p1) - 2.0 * gamma4 / (gamma4 - 1.0) * math.log(base)
+        if log_predicted > 700.0:
+            return math.inf
+        return math.exp(log_predicted) - p4_p1
 
-    grid = np.geomspace(1.0 + 1.0e-10, p4_p1, 300)
-    values = np.array([residual(float(x)) for x in grid])
-    finite = np.isfinite(values)
-    for left, right, fl, fr in zip(grid[:-1], grid[1:], values[:-1], values[1:]):
-        if np.isfinite(fl) and np.isfinite(fr) and fl * fr <= 0.0:
-            return brentq(residual, float(left), float(right), xtol=1.0e-12, rtol=1.0e-12)
-    raise RuntimeError(f"No physical shock-tube root found for P4/P1={p4_p1}, T4/T1={t4_t1}; finite={finite.sum()}.")
+    # The rarefaction factor reaches zero at this analytical positive root.
+    delta_zero = gamma1 * (
+        (gamma1 + 1.0) + math.sqrt((gamma1 + 1.0) ** 2 + 4.0 * coefficient**2)
+    ) / coefficient**2
+    upper = min(p4_p1, 1.0 + (1.0 - 1.0e-8) * delta_zero)
+    return brentq(residual, 1.0 + 1.0e-12, upper, xtol=1.0e-12, rtol=1.0e-12)
+
+
+def shock_tube_pressure_ratio(p4_p1: float, t4_t1: float = 1.0,
+                              gamma: float = GAMMA) -> float:
+    """Solve the equal-gas ideal shock-tube pressure ratio P2/P1."""
+    return shock_tube_pressure_ratio_general(p4_p1, t4_t1, gamma, gamma, 1.0)
 
 
 def shock_tube_residual(p2_p1: np.ndarray | float, p4_p1: np.ndarray | float,
                         t4_t1: np.ndarray | float, gamma: float = GAMMA) -> np.ndarray:
-    p2, p4, t4 = np.broadcast_arrays(np.asarray(p2_p1, float), np.asarray(p4_p1, float), np.asarray(t4_t1, float))
-    a1_a4 = np.sqrt(1.0 / t4)
-    term = (gamma - 1.0) * a1_a4 * (p2 - 1.0)
-    term /= np.sqrt(2.0 * gamma * (2.0 * gamma + (gamma + 1.0) * (p2 - 1.0)))
+    return shock_tube_residual_general(p2_p1, p4_p1, t4_t1, gamma, gamma, 1.0)
+
+
+def shock_tube_residual_general(
+        p2_p1: np.ndarray | float, p4_p1: np.ndarray | float,
+        t4_t1: np.ndarray | float, gamma1: np.ndarray | float = GAMMA,
+        gamma4: np.ndarray | float = GAMMA,
+        r4_r1: np.ndarray | float = 1.0) -> np.ndarray:
+    """Compatibility residual for the distinct-gas shock-tube relation."""
+    p2, p4, t4, g1, g4, rr = np.broadcast_arrays(
+        np.asarray(p2_p1, float), np.asarray(p4_p1, float),
+        np.asarray(t4_t1, float), np.asarray(gamma1, float),
+        np.asarray(gamma4, float), np.asarray(r4_r1, float),
+    )
+    a1_a4 = np.sqrt(g1 / (g4 * rr * t4))
+    delta = p2 - 1.0
+    term = (g4 - 1.0) * a1_a4 * delta
+    term /= np.sqrt(2.0 * g1 * (2.0 * g1 + (g1 + 1.0) * delta))
     base = 1.0 - term
-    predicted = p2 * np.where(base > 0.0, base ** (-2.0 * gamma / (gamma - 1.0)), np.nan)
+    with np.errstate(over="ignore", invalid="ignore"):
+        predicted = p2 * np.where(base > 0.0, base ** (-2.0 * g4 / (g4 - 1.0)), np.nan)
     return predicted - p4
 
 
 def entropy_over_r(temperature_ratio: np.ndarray, pressure_ratio: np.ndarray,
                    gamma: float = GAMMA) -> np.ndarray:
     return gamma / (gamma - 1.0) * np.log(temperature_ratio) - np.log(pressure_ratio)
-

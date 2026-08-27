@@ -212,13 +212,32 @@ Shock tube & 2047.4 & 4.040 & 20.087 & 102 \\
 \label{fig:timing}
 \end{figure}
 
+To isolate dimensional scaling without changing the physical model class, the shock-tube compatibility relation was extended successively from $(P_4/P_1,T_4/T_1)$ to a common $\gamma$, distinct $(\gamma_1,\gamma_4)$, and $R_4/R_1$. With approximately 4096 exact offline states for each method, Table~\ref{tab:dimension} shows that regular-grid resolution falls from 64 to 5 nodes per coordinate and its relative $L_2$ error rises from 0.0205\% to 4.885\%; the bounded MLP error is 0.1771\% in five dimensions. Interpolation remains slightly faster for 5000 five-dimensional queries, so the demonstrated neural advantage is compact accuracy under a fixed multidimensional data budget, not universal timing superiority. A practical many-query complement is the rarefied-flow DeepONet study of Roohi et al.~\cite{roohi2026}, which reports an order-$10^4$ online acceleration relative to repeated DSMC cylinder simulations.
+
+\begin{table}[ht]
+\centering
+\caption{Generalized shock-tube dimensional audit. Both methods use approximately 4096 exact offline states. Grid storage is the minimum for one scalar double-precision table at 64 nodes per coordinate; MLP storage is the measured serialized size.}
+\label{tab:dimension}
+\small
+\begin{tabular}{rrrrrr}
+\toprule
+$d$ & Grid nodes/axis & Grid states & Interp. $L_2$ (\%) & MLP $L_2$ (\%) & Grid 64 / MLP storage \\
+\midrule
+2 & 64 & 4096 & 0.0205 & 0.1067 & 0.032 MiB / 76.1 KiB \\
+3 & 15 & 3375 & 0.4283 & 0.2036 & 2.00 MiB / 77.1 KiB \\
+4 & 8 & 4096 & 1.713 & 0.2137 & 128 MiB / 78.1 KiB \\
+5 & 5 & 3125 & 4.885 & 0.1771 & 8.00 GiB / 79.1 KiB \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \section{What the network learns and what it does not}
 These experiments do not establish discovery of new thermodynamics. The networks learn smooth parametric representations of exact maps under a finite data distribution. The scientifically meaningful content is in the representation: branch identity, sonic-distance features, bounded coordinates, and analytical reconstruction. The ablations show that this representation changes the learned solution qualitatively, not merely its aggregate MSE. Nevertheless, on a dense one-dimensional table PCHIP is both faster and more accurate. The network is justified only when its constraint structure, differentiability, compactness, or multi-parameter coverage is useful to the surrounding workflow.
 
 The repository separates exact physics, model transforms, experiments, figures, and manuscript evidence. Every reported number is read from a generated CSV rather than transcribed from an exploratory notebook. This separation also reveals earlier prototype errors: the Rayleigh static-temperature split, unphysical negative Fanno outputs, soft anchors described as hard, unconstrained nozzle positions, and a one-input shock-tube model described as two-input. These inconsistencies are corrected in the revision.
 
 \section{Limitations and failure modes}
-The study has six principal limitations. (1) All data are generated from calorically perfect, one-dimensional theory with constant $\gamma$; chemical reaction, variable properties, viscosity outside the Fanno idealization, and multidimensional effects are excluded. (2) The edge-holdout test shows finite short-range extrapolation but appreciable Rayleigh/Fanno degradation; the repository still rejects use beyond the global parameter boxes. (3) Ensemble variability is not calibrated Bayesian uncertainty. (4) Physical output transforms guarantee selected bounds but do not enforce every conservation identity. (5) Classical interpolation can dominate the MLP for fixed low-dimensional tables. (6) The speed comparison excludes offline data generation and training; it is relevant only to amortized many-query use. Future work should add calibrated uncertainty, adaptive sampling near singular limits, variable-$\gamma$ mixtures, and controlled coupling to CFD or experimental data.
+The study has six principal limitations. (1) The five primary benchmarks use calorically perfect, one-dimensional theory with constant $\gamma=1.4$; the dimensional audit varies ideal-gas $\gamma_1$, $\gamma_4$, and $R_4/R_1$ but does not add chemistry, variable heat capacities, or multidimensional shocks. (2) The edge-holdout test shows finite short-range extrapolation but appreciable Rayleigh/Fanno degradation; the repository still rejects use beyond the global parameter boxes. (3) Ensemble variability is not calibrated Bayesian uncertainty. (4) Physical output transforms guarantee selected bounds but do not enforce every conservation identity. (5) Classical interpolation can dominate the MLP for fixed low-dimensional tables. (6) The speed comparison excludes offline data generation and training; it is relevant only to amortized many-query use. Future work should add calibrated uncertainty, adaptive sampling near singular limits, thermally perfect mixtures, and controlled coupling to CFD or experimental data.
 
 \section{Conclusions}
 Five canonical gas-dynamics relations were reformulated as reproducible SciML benchmarks for multi-valued inverses, singular limits, and hybrid analytical reconstruction. Quantitative blind tests, ablations, physical diagnostics, classical baselines, measured timing, sample-size studies, and three-seed ensembles replace the qualitative validation of the submitted manuscript. The main finding is methodological: physics-guided coordinates and output transforms prevent failures that a naive MLP cannot resolve, while classical interpolation remains the correct comparator and often the better tool for one-dimensional tables. The released code provides a compact test bed for evaluating branch-aware and constraint-aware learning strategies without ambiguity from an unknown reference solution.
@@ -235,6 +254,7 @@ The author declares no competing financial or personal interests.
 \bibitem{lu2021} L. Lu et al., Learning nonlinear operators via DeepONet based on the universal approximation theorem of operators, Nature Machine Intelligence 3 (2021) 218--229.
 \bibitem{li2021} Z. Li et al., Fourier neural operator for parametric partial differential equations, International Conference on Learning Representations (2021).
 \bibitem{rehman2022} K.U. Rehman, W. Shatanawi, A.B. \c{C}olak, Thermal analysis of flowing stream in partially heated double forward-facing step by using artificial neural network, Case Studies in Thermal Engineering 37 (2022) 102221. \url{https://doi.org/10.1016/j.csite.2022.102221}.
+\bibitem{roohi2026} E. Roohi, A. Shoja-Sani, F. Ebrahimzadeh Azghadi, Neural networks for rarefied gas dynamics: Relaxation problem, polyatomic shock waves, and hypersonic cylinder flow, Physics of Fluids 38 (2026) 057108. \url{https://doi.org/10.1063/5.0334590}.
 \bibitem{anderson} J.D. Anderson, Modern Compressible Flow, third ed., McGraw-Hill, New York, 2003.
 \end{thebibliography}
 \end{revision}

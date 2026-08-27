@@ -11,6 +11,7 @@
 | Oblique supplementary panel | `results/revision/figures/oblique_results.pdf` | direct and branch inverse predictions |
 | Nozzle supplementary panel | `results/revision/figures/nozzle_results.pdf` | bounded shock-location grid |
 | Shock-tube supplementary panel | `results/revision/figures/shock_tube_results.pdf` | two-parameter residual audit |
+| Dimensional-scaling supplementary panel | `results/revision/figures/high_dimensional_scaling.pdf` | `high_dimensional_scaling.csv` |
 
 The edge-holdout range experiment is tabulated in `results/revision/range_generalization.csv` and reported in the manuscript text.
 
