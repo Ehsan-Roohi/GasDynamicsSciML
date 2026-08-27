@@ -1,0 +1,221 @@
+\documentclass[11pt]{article}
+\usepackage[a4paper,margin=2.25cm]{geometry}
+\usepackage{amsmath,amssymb,booktabs,array,graphicx,microtype}
+\usepackage[table]{xcolor}
+\usepackage{hyperref}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{enumitem}
+\usepackage{lineno}
+\graphicspath{{results/revision/figures/}}
+\hypersetup{colorlinks=true,linkcolor=blue!55!black,citecolor=blue!55!black,urlcolor=blue!55!black}
+\definecolor{revisionblue}{RGB}{0,82,170}
+\ifshowchanges
+  \newenvironment{revision}{\color{revisionblue}}{}
+  \newcommand{\rev}[1]{\textcolor{revisionblue}{#1}}
+\else
+  \newenvironment{revision}{}{}
+  \newcommand{\rev}[1]{#1}
+\fi
+\newcommand{\relLtwo}{L_{2,\mathrm{rel}}}
+\newcommand{\relLinf}{L_{\infty,\mathrm{rel}}}
+
+\title{Physics-Guided Neural Surrogates for Canonical Compressible Thermal-Fluid Relations}
+\author{Ehsan Roohi\\\small Mechanical and Industrial Engineering Department, University of Massachusetts Amherst\\\small Amherst, MA 01003, USA\\\small Corresponding author: roohie@umass.edu}
+\date{}
+
+\begin{document}
+\maketitle
+\linenumbers
+
+\begin{abstract}
+\begin{revision}
+Canonical gas-dynamics relations form a useful scientific-machine-learning (SciML) benchmark because their exact solutions are known while their inverse maps can be multi-valued, singular, or implicitly coupled. We present a reproducible benchmark for Rayleigh flow, Fanno flow, oblique shocks, a normal shock inside a convergent-divergent nozzle, and an unsteady shock tube. The contribution is the controlled comparison of naive and physics-guided formulations, not a new universal neural architecture. Branch-specific experts resolve Rayleigh, Fanno, and weak/strong oblique-shock inverses; positive or bounded output transforms enforce sonic limits and admissible states; and nozzle and shock-tube networks learn only the implicit scalar step while analytical relations reconstruct the remaining state. Blind-test relative $L_2$ errors for the five inverse tasks are $1.64\times10^{-3}$, $3.43\times10^{-3}$, $7.99\times10^{-4}$, $1.94\times10^{-3}$, and $9.49\times10^{-4}$, respectively. A naive oblique-shock inverse averages incompatible branches, whereas branch experts reduce the branch-distance mean absolute error from $4.25\times10^{-1}$ to $5.08\times10^{-4}$ rad. A raw Fanno network produces negative near-sonic friction-length values in 96.9\% of the local audit, while the structured transform is non-negative by construction. Measured CPU timings show that batched neural inference is 96--1057 times faster than bracketed root finding for 5000 queries. Classical interpolation remains faster and, for one-dimensional relations, more accurate inside its covered domain; its limitations are incomplete convex-hull coverage and lack of hard physical constraints. Three-seed ensembles, training-size studies, local near-limit errors, thermodynamic diagnostics, and failure cases are reported. The resulting repository provides auditable equations, tests, configurations, CSV evidence, vector figures, and a one-command reproduction pipeline.
+\end{revision}
+\end{abstract}
+
+\noindent\textbf{Keywords:} scientific machine learning; compressible flow; inverse problems; branch decomposition; gas dynamics; reproducibility
+
+\begin{revision}
+\section{Introduction}
+Low-dimensional gas-dynamics relations are analytically well established, yet their use inside many-query engineering workflows is not always trivial. Rayleigh and Fanno inverse relations have distinct subsonic and supersonic branches; oblique shocks have weak and strong attached solutions below detachment; an internal nozzle shock must be localized from an operating pressure ratio; and the shock-tube pressure ratio follows from an implicit nonlinear compatibility equation. These properties expose precisely the failure modes that a compact SciML benchmark should test: non-uniqueness, singular limits, admissible-domain constraints, extrapolation, and the distinction between regression accuracy and physical validity.
+
+Physics-informed neural networks and neural operators usually target differential equations or high-dimensional fields \cite{raissi2019,karniadakis2021,lu2021,li2021}. The present work addresses a complementary regime: the exact reference physics is inexpensive enough to audit exhaustively, but the inverse map is structurally difficult. This makes the five problems useful as foundational unit tests for branch-aware and constraint-aware surrogate design. Related thermal-fluid studies have demonstrated that multilayer perceptrons can regress flow and heat-transfer outputs, including the artificial-neural-network model of Rehman et al. for a partially heated double forward-facing step \cite{rehman2022}. Our study differs by isolating mathematical pathologies, comparing naive and structured formulations on identical data, and releasing all analytical and machine-learning evidence.
+
+The revised contribution is fourfold. First, we define a common data, split, metric, and timing contract for five canonical relations. Second, we demonstrate controlled failures: branch averaging in a naive oblique inverse and negative friction length from a raw Fanno output. Third, we impose transparent physical structure through branch experts and analytical output transforms. Fourth, we compare neural inference with both bracketed roots and classical interpolation, report uncertainty across training seeds, and state where the neural model is not the preferred numerical method. The goal is therefore a reproducible SciML benchmark and a collection of reusable design patterns, not a claim that an MLP supersedes exact formulas or tables in every setting.
+
+\section{Analytical benchmark and learning tasks}
+All gases are calorically perfect with $\gamma=1.4$. Each analytical implementation is tested at its sonic reference state and by a forward--inverse round trip. Table~\ref{tab:contract} states the principal inverse tasks and hard constraints.
+
+\begin{table}[ht]
+\centering
+\caption{Benchmark contract. The primary reported metric is evaluated on a blind grid that is not used for fitting.}
+\label{tab:contract}
+\small
+\begin{tabular}{p{2.15cm}p{2.5cm}p{2.65cm}p{5.0cm}}
+\toprule
+Problem & Network input & Network output & Physics-guided formulation \\
+\midrule
+Rayleigh & $T_0/T_0^*$, branch & $M$ & Separate sub/sup experts; $\sqrt{1-T_0/T_0^*}$ feature; bounded Mach output \\
+Fanno & $\sqrt{4fL^*/D}$, branch & $M$ & Separate sub/sup experts; bounded Mach output; forward $4fL^*/D=(M-1)^2\exp g_\theta(M)$ \\
+Oblique shock & $M$, $\theta/\theta_{\max}$ & $\beta_w,\beta_s$ & Weak/strong outputs bounded between the Mach angle and $\pi/2$; direct map has an exact endpoint envelope \\
+Nozzle shock & $A_e/A_t$, $P_b/P_{01}$ & $A_s/A_t$ & $A_s/A_t=1+\sigma(z)(A_e/A_t-1)$ \\
+Shock tube & $\log(P_4/P_1)$, $\log(T_4/T_1)$ & $P_2/P_1$ & $P_2/P_1=1+\sigma(z)(P_4/P_1-1)$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Rayleigh and Fanno relations}
+The Rayleigh ratios used for auditing include
+\begin{align}
+\frac{T}{T^*}&=\frac{(1+\gamma)^2M^2}{(1+\gamma M^2)^2}, &
+\frac{P}{P^*}&=\frac{1+\gamma}{1+\gamma M^2},\\
+\frac{T_0}{T_0^*}&=\frac{T}{T^*}\frac{1+(\gamma-1)M^2/2}{(\gamma+1)/2}.
+\end{align}
+The submitted prototype inverted the static ratio $T/T^*$ while splitting the data at $M=1$. This is mathematically inconsistent because the static-temperature maximum occurs at $M=1/\sqrt{\gamma}$. The revision uses $T_0/T_0^*$, whose maximum is at $M=1$, and trains separate subsonic and supersonic experts.
+
+For Fanno flow,
+\begin{equation}
+\frac{4fL^*}{D}=\frac{1-M^2}{\gamma M^2}+\frac{\gamma+1}{2\gamma}
+\ln\!\left[\frac{(\gamma+1)M^2}{2+(\gamma-1)M^2}\right].
+\end{equation}
+This non-negative quantity approaches zero quadratically at $M=1$. Instead of fitting the raw value, the structured forward model learns $g_\theta(M)=\log[(4fL^*/D)/(M-1)^2]$ and reconstructs the target with the exact quadratic envelope. The inverse experts use $\sqrt{4fL^*/D}$, which regularizes the local sonic behavior.
+
+\subsection{Oblique shock, nozzle, and shock tube}
+The oblique-shock relation is
+\begin{equation}
+\tan\theta=2\cot\beta\frac{M^2\sin^2\beta-1}{M^2(\gamma+\cos2\beta)+2}.
+\end{equation}
+For a specified $M$ and $0<\theta<\theta_{\max}(M)$, two attached roots exist. A naive single-output inverse receives identical inputs paired with incompatible labels and is therefore ill-posed. The branch model returns weak and strong outputs separately, each written as a sigmoid fraction of the interval between the Mach angle $\mu=\sin^{-1}(1/M)$ and $\pi/2$. For the direct map, $q=(\beta-\mu)/(\pi/2-\mu)$ and
+\begin{equation}
+\widehat{\theta}=q(1-q)\exp h_\theta(M,q),
+\end{equation}
+which is exactly zero at both physical endpoints. This is a hard output transform. The earlier prototype's extra endpoint samples were only soft data anchors; the revised text no longer calls them hard constraints.
+
+The nozzle reference samples an exit area ratio and an admissible shock location, reconstructs the upstream supersonic Mach number, applies normal-shock relations, and diffuses subsonically to the exit. The learned variable is only the inverse shock location. Its sigmoid transform prevents the nonphysical $A_s/A_t<1$ and $A_s/A_t>A_e/A_t$ predictions that arose when the prototype merely masked invalid values after inference.
+
+The shock-tube compatibility equation is solved by a bracketed Brent method with residual checks. Unlike the submitted one-input prototype, the revised model varies both $P_4/P_1\in[1.5,300]$ and $T_4/T_1\in[0.5,2]$. The network predicts only $P_2/P_1$; wave speeds and piecewise thermodynamic states remain analytical. Consequently, discontinuities are reconstructed rather than smoothed by a field-regression network.
+
+\section{Training, baselines, and evaluation protocol}
+\subsection{Architecture and reproducibility}
+All networks use scikit-learn 1.8.0 with standardized inputs and targets, hyperbolic-tangent activations, L-BFGS optimization, $L_2$ weight penalty $10^{-8}$, tolerance $10^{-10}$, and at most 700 iterations/50,000 function evaluations. Rayleigh and Fanno experts and forward models use two hidden layers of 32 neurons; the oblique inverse, nozzle, and shock-tube models use two hidden layers of 64 neurons. The final blind experiment uses 900 analytical training samples per problem and fixed seed 11. Hyperparameters were frozen before the blind-grid evaluation. Test counts are 900 Rayleigh states, 1040 Fanno states with logarithmic sonic clustering, 850 oblique input states (two branch outputs), 896 nozzle states, and 960 shock-tube states.
+
+The repository records package versions, platform metadata, seeds, all CSV tables, and the exact command that regenerates them. Unit tests verify sonic reference states, both inverse branches, nozzle forward--inverse closure, oblique roots, and the shock-tube residual. GitHub Actions runs these tests and a reduced smoke experiment.
+
+\subsection{Metrics, uncertainty, and baselines}
+For $N$ blind targets, we report
+\begin{equation}
+\relLtwo=\frac{\|\widehat{\mathbf y}-\mathbf y\|_2}{\|\mathbf y\|_2},\qquad
+\relLinf=\frac{\|\widehat{\mathbf y}-\mathbf y\|_\infty}{\|\mathbf y\|_\infty},
+\end{equation}
+together with MAE, RMSE, maximum absolute error, local near-limit bins, equation residuals, and validity rates. Training uncertainty is estimated by seeds 11, 29, and 47; this is an ensemble variability measure, not a calibrated probabilistic posterior. Training-size sensitivity is evaluated at 200, 500, and 900 samples over the same three seeds.
+
+Classical comparison uses branch-wise PCHIP for one-dimensional relations and piecewise-linear interpolation for two-dimensional scattered data. Coverage is reported because interpolators return no value outside the training convex hull. Root baselines use a bracketed Brent solve and the same tolerances as data generation. Wall-clock measurements use a warm-up followed by seven repetitions; Table~\ref{tab:timing} reports median CPU time and the CSV also stores the interquartile range.
+
+\section{Results}
+\subsection{Blind accuracy and branch stability}
+Figure~\ref{fig:accuracy} and Table~\ref{tab:metrics} show blind-test agreement. All five inverse tasks have $\relLtwo<3.5\times10^{-3}$ and $\relLinf<4.8\times10^{-3}$. These are finite errors, and we therefore replace the submitted phrases ``infinite precision,'' ``exactly preserves,'' and ``near-perfect'' with quantitative statements.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.98\linewidth]{benchmark_accuracy.pdf}
+\caption{Blind analytical-versus-surrogate comparison. The axes are deliberately unnormalized so that absolute scale remains visible.}
+\label{fig:accuracy}
+\end{figure}
+
+\begin{table}[ht]
+\centering
+\caption{Blind inverse-task errors for the physics-guided MLPs.}
+\label{tab:metrics}
+\small
+\begin{tabular}{lrrrr}
+\toprule
+Problem & $\relLtwo$ & $\relLinf$ & MAE & Maximum absolute error \\
+\midrule
+Rayleigh inverse & 1.642e-3 & 2.521e-3 & 2.227e-3 & 1.248e-2 \\
+Fanno inverse & 3.431e-3 & 3.761e-3 & 4.378e-3 & 1.862e-2 \\
+Oblique inverse & 7.990e-4 & 4.543e-3 & 5.076e-4 & 7.116e-3 \\
+Nozzle inverse & 1.936e-3 & 4.756e-3 & 3.522e-3 & 2.288e-2 \\
+Shock-tube implicit step & 9.490e-4 & 4.209e-3 & 2.388e-3 & 5.373e-2 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The ablations in Figure~\ref{fig:ablation} identify why structure matters. The naive oblique inverse has a branch-distance MAE of 0.4246 rad because it predicts between the two admissible roots. Branch experts reduce this to $5.076\times10^{-4}$ rad and preserve weak-before-strong ordering for 100\% of blind states. For Fanno flow, the raw model predicts negative $4fL^*/D$ in 96.9\% of the $|M-1|<0.05$ audit. The quadratic positive transform has a local MAE of $1.23\times10^{-8}$ and cannot become negative.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.96\linewidth]{ablation_branch_singularity.pdf}
+\caption{Controlled failure studies: raw versus structured Fanno output (left), and naive versus branch-aware oblique inversion (right).}
+\label{fig:ablation}
+\end{figure}
+
+\subsection{Physical diagnostics and limiting regimes}
+The Rayleigh and Fanno entropy reconstructions use $\Delta s/R=\gamma(\gamma-1)^{-1}\ln(T/T^*)-\ln(P/P^*)$. The blind maximum entropy-location error is zero on the sampled grid for both relations; the maximum entropy-value discrepancies are 0.0205 and 0.0175, respectively. These results show close thermodynamic consistency but do not prove that the unconstrained property outputs satisfy every conservation identity exactly. The Fanno friction, oblique endpoints, nozzle location, and shock-tube pressure bounds have 100\% validity because they are imposed by output transforms. The maximum normalized shock-tube compatibility residual is 0.0438; exact residual recovery remains available through the bracketed reference solver.
+
+Figure~\ref{fig:limits} reports local errors instead of allowing global norms to hide limiting behavior. Additional machine-readable bins are provided for sonic states, detachment, nozzle throat/exit limits, and high pressure ratios. The training-size study improves or plateaus for most configurations, but Fanno flow displays appreciable seed sensitivity at 900 samples under the fixed L-BFGS budget. Thus, additional samples alone do not guarantee a better optimizer solution; this negative result motivates reporting both sample count and training variability.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.96\linewidth]{sensitivity_and_singular_error.pdf}
+\caption{Training-size sensitivity as mean$\pm$standard deviation over three seeds (left) and local error by distance from a limiting regime (right).}
+\label{fig:limits}
+\end{figure}
+
+Across three-seed ensembles, mean$\pm$standard-deviation $\relLtwo$ values are $(1.49\pm0.65)\times10^{-3}$ for Rayleigh, $(2.36\pm0.33)\times10^{-3}$ for Fanno, $(0.941\pm0.093)\times10^{-3}$ for oblique shocks, $(1.68\pm0.55)\times10^{-3}$ for the nozzle, and $(1.42\pm0.37)\times10^{-3}$ for the shock tube. Ensemble spread should be treated as a warning indicator: extrapolation or out-of-domain use is rejected by explicit domain checks rather than justified by a small ensemble standard deviation.
+
+\subsection{Classical baselines and measured efficiency}
+Interpolation is a strong baseline. Branch-wise PCHIP achieves lower error than the neural model for Rayleigh and Fanno wherever test points are inside its tabulated interval. The two-dimensional interpolator is also competitive for the shock tube. However, measured blind coverage is 99.8\% for Rayleigh, 64.9\% for Fanno, 97.1\% for oblique shocks, 96.2\% for the nozzle, and 97.4\% for the shock tube. The MLP output transforms give 100\% coverage and admissibility inside the declared rectangular domain. The appropriate conclusion is not that the MLP replaces interpolation: PCHIP is preferable for a fixed one-dimensional table, while a structured MLP is useful when a compact differentiable parameterization, full rectangular coverage, or hard branch constraints are required.
+
+\begin{table}[ht]
+\centering
+\caption{Measured median CPU time for 5000 queries. Speed-up is bracketed-root time divided by MLP time.}
+\label{tab:timing}
+\small
+\begin{tabular}{lrrrr}
+\toprule
+Problem & Root (ms) & Interpolation (ms) & MLP (ms) & Root/MLP \\
+\midrule
+Rayleigh & 502.7 & 0.274 & 2.559 & 196 \\
+Fanno & 947.7 & 0.227 & 2.436 & 389 \\
+Oblique shock & 1501.7 & 3.852 & 15.615 & 96 \\
+Nozzle shock & 4292.2 & 0.970 & 4.060 & 1057 \\
+Shock tube & 2047.4 & 4.040 & 20.087 & 102 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.88\linewidth]{measured_timing.pdf}
+\caption{Measured CPU cost. Interpolation is fastest; batched MLP inference is substantially faster than repeated bracketed roots.}
+\label{fig:timing}
+\end{figure}
+
+\section{What the network learns and what it does not}
+These experiments do not establish discovery of new thermodynamics. The networks learn smooth parametric representations of exact maps under a finite data distribution. The scientifically meaningful content is in the representation: branch identity, sonic-distance features, bounded coordinates, and analytical reconstruction. The ablations show that this representation changes the learned solution qualitatively, not merely its aggregate MSE. Nevertheless, on a dense one-dimensional table PCHIP is both faster and more accurate. The network is justified only when its constraint structure, differentiability, compactness, or multi-parameter coverage is useful to the surrounding workflow.
+
+The repository separates exact physics, model transforms, experiments, figures, and manuscript evidence. Every reported number is read from a generated CSV rather than transcribed from an exploratory notebook. This separation also reveals earlier prototype errors: the Rayleigh static-temperature split, unphysical negative Fanno outputs, soft anchors described as hard, unconstrained nozzle positions, and a one-input shock-tube model described as two-input. These inconsistencies are corrected in the revision.
+
+\section{Limitations and failure modes}
+The study has six principal limitations. (1) All data are generated from calorically perfect, one-dimensional theory with constant $\gamma$; chemical reaction, variable properties, viscosity outside the Fanno idealization, and multidimensional effects are excluded. (2) Blind tests are restricted to declared parameter boxes. The repository rejects rather than validates extrapolation beyond them. (3) Ensemble variability is not calibrated Bayesian uncertainty. (4) Physical output transforms guarantee selected bounds but do not enforce every conservation identity. (5) Classical interpolation can dominate the MLP for fixed low-dimensional tables. (6) The speed comparison excludes offline data generation and training; it is relevant only to amortized many-query use. Future work should add calibrated uncertainty, adaptive sampling near singular limits, variable-$\gamma$ mixtures, and controlled coupling to CFD or experimental data.
+
+\section{Conclusions}
+Five canonical gas-dynamics relations were reformulated as reproducible SciML benchmarks for multi-valued inverses, singular limits, and hybrid analytical reconstruction. Quantitative blind tests, ablations, physical diagnostics, classical baselines, measured timing, sample-size studies, and three-seed ensembles replace the qualitative validation of the submitted manuscript. The main finding is methodological: physics-guided coordinates and output transforms prevent failures that a naive MLP cannot resolve, while classical interpolation remains the correct comparator and often the better tool for one-dimensional tables. The released code provides a compact test bed for evaluating branch-aware and constraint-aware learning strategies without ambiguity from an unknown reference solution.
+
+\section*{Data and code availability}
+All analytical generators, training scripts, tests, CSV evidence, and figure sources are available at \url{https://github.com/Ehsan-Roohi/Gas-Dynamics-}. The complete revision is reproduced with \texttt{gasdynbench --output results/revision}; a reduced CI run uses \texttt{--quick}.
+
+\section*{Declaration of competing interest}
+The author declares no competing financial or personal interests.
+
+\begin{thebibliography}{9}
+\bibitem{raissi2019} M. Raissi, P. Perdikaris, G.E. Karniadakis, Physics-informed neural networks: A deep learning framework for solving forward and inverse problems involving nonlinear partial differential equations, Journal of Computational Physics 378 (2019) 686--707.
+\bibitem{karniadakis2021} G.E. Karniadakis et al., Physics-informed machine learning, Nature Reviews Physics 3 (2021) 422--440.
+\bibitem{lu2021} L. Lu et al., Learning nonlinear operators via DeepONet based on the universal approximation theorem of operators, Nature Machine Intelligence 3 (2021) 218--229.
+\bibitem{li2021} Z. Li et al., Fourier neural operator for parametric partial differential equations, International Conference on Learning Representations (2021).
+\bibitem{rehman2022} K.U. Rehman, W. Shatanawi, A.B. \c{C}olak, Thermal analysis of flowing stream in partially heated double forward-facing step by using artificial neural network, Case Studies in Thermal Engineering 37 (2022) 102221. \url{https://doi.org/10.1016/j.csite.2022.102221}.
+\bibitem{anderson} J.D. Anderson, Modern Compressible Flow, third ed., McGraw-Hill, New York, 2003.
+\end{thebibliography}
+\end{revision}
+\end{document}

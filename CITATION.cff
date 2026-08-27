@@ -1,0 +1,13 @@
+cff-version: 1.2.0
+message: "If you use these benchmarks, please cite the associated AI Thermal Fluids manuscript."
+title: "GasDynamicsSciML: Physics-guided neural benchmarks for canonical gas dynamics"
+type: software
+authors:
+  - family-names: Roohi
+    given-names: Ehsan
+    email: roohie@umass.edu
+version: 0.1.0
+date-released: 2026-08-27
+license: MIT
+repository-code: "https://github.com/Ehsan-Roohi/Gas-Dynamics-"
+
