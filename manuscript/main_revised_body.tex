@@ -164,6 +164,26 @@ Figure~\ref{fig:limits} reports local errors instead of allowing global norms to
 
 Across three-seed ensembles, mean$\pm$standard-deviation $\relLtwo$ values are $(1.49\pm0.65)\times10^{-3}$ for Rayleigh, $(2.36\pm0.33)\times10^{-3}$ for Fanno, $(0.941\pm0.093)\times10^{-3}$ for oblique shocks, $(1.68\pm0.55)\times10^{-3}$ for the nozzle, and $(1.42\pm0.37)\times10^{-3}$ for the shock tube. Ensemble spread should be treated as a warning indicator: extrapolation or out-of-domain use is rejected by explicit domain checks rather than justified by a small ensemble standard deviation.
 
+To test previously unseen parameter ranges, we performed an edge-holdout experiment. Each surrogate was retrained only on an interior parameter box; the omitted low/high edge bands inside the declared global physical domain were then opened once for testing. Table~\ref{tab:range} shows that all hard bounds remain valid, but errors increase relative to random blind interpolation, especially for the one-dimensional Rayleigh and Fanno inverses. This is controlled short-range extrapolation, not evidence for use beyond the global domain.
+
+\begin{table}[ht]
+\centering
+\caption{Edge-holdout generalization: models trained on interior boxes and tested only on omitted parameter-edge bands.}
+\label{tab:range}
+\small
+\begin{tabular}{lrrrr}
+\toprule
+Problem & Edge states & $\relLtwo$ & $\relLinf$ & Valid bounds \\
+\midrule
+Rayleigh inverse & 233 & 3.414e-2 & 6.632e-2 & 100\% \\
+Fanno inverse & 563 & 4.302e-2 & 7.243e-2 & 100\% \\
+Oblique inverse & 370 & 7.547e-3 & 2.856e-2 & 100\% \\
+Nozzle inverse & 368 & 1.064e-2 & 2.263e-2 & 100\% \\
+Shock-tube implicit step & 365 & 4.318e-3 & 8.154e-3 & 100\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \subsection{Classical baselines and measured efficiency}
 Interpolation is a strong baseline. Branch-wise PCHIP achieves lower error than the neural model for Rayleigh and Fanno wherever test points are inside its tabulated interval. The two-dimensional interpolator is also competitive for the shock tube. However, measured blind coverage is 99.8\% for Rayleigh, 64.9\% for Fanno, 97.1\% for oblique shocks, 96.2\% for the nozzle, and 97.4\% for the shock tube. The MLP output transforms give 100\% coverage and admissibility inside the declared rectangular domain. The appropriate conclusion is not that the MLP replaces interpolation: PCHIP is preferable for a fixed one-dimensional table, while a structured MLP is useful when a compact differentiable parameterization, full rectangular coverage, or hard branch constraints are required.
 
@@ -198,7 +218,7 @@ These experiments do not establish discovery of new thermodynamics. The networks
 The repository separates exact physics, model transforms, experiments, figures, and manuscript evidence. Every reported number is read from a generated CSV rather than transcribed from an exploratory notebook. This separation also reveals earlier prototype errors: the Rayleigh static-temperature split, unphysical negative Fanno outputs, soft anchors described as hard, unconstrained nozzle positions, and a one-input shock-tube model described as two-input. These inconsistencies are corrected in the revision.
 
 \section{Limitations and failure modes}
-The study has six principal limitations. (1) All data are generated from calorically perfect, one-dimensional theory with constant $\gamma$; chemical reaction, variable properties, viscosity outside the Fanno idealization, and multidimensional effects are excluded. (2) Blind tests are restricted to declared parameter boxes. The repository rejects rather than validates extrapolation beyond them. (3) Ensemble variability is not calibrated Bayesian uncertainty. (4) Physical output transforms guarantee selected bounds but do not enforce every conservation identity. (5) Classical interpolation can dominate the MLP for fixed low-dimensional tables. (6) The speed comparison excludes offline data generation and training; it is relevant only to amortized many-query use. Future work should add calibrated uncertainty, adaptive sampling near singular limits, variable-$\gamma$ mixtures, and controlled coupling to CFD or experimental data.
+The study has six principal limitations. (1) All data are generated from calorically perfect, one-dimensional theory with constant $\gamma$; chemical reaction, variable properties, viscosity outside the Fanno idealization, and multidimensional effects are excluded. (2) The edge-holdout test shows finite short-range extrapolation but appreciable Rayleigh/Fanno degradation; the repository still rejects use beyond the global parameter boxes. (3) Ensemble variability is not calibrated Bayesian uncertainty. (4) Physical output transforms guarantee selected bounds but do not enforce every conservation identity. (5) Classical interpolation can dominate the MLP for fixed low-dimensional tables. (6) The speed comparison excludes offline data generation and training; it is relevant only to amortized many-query use. Future work should add calibrated uncertainty, adaptive sampling near singular limits, variable-$\gamma$ mixtures, and controlled coupling to CFD or experimental data.
 
 \section{Conclusions}
 Five canonical gas-dynamics relations were reformulated as reproducible SciML benchmarks for multi-valued inverses, singular limits, and hybrid analytical reconstruction. Quantitative blind tests, ablations, physical diagnostics, classical baselines, measured timing, sample-size studies, and three-seed ensembles replace the qualitative validation of the submitted manuscript. The main finding is methodological: physics-guided coordinates and output transforms prevent failures that a naive MLP cannot resolve, while classical interpolation remains the correct comparator and often the better tool for one-dimensional tables. The released code provides a compact test bed for evaluating branch-aware and constraint-aware learning strategies without ambiguity from an unknown reference solution.

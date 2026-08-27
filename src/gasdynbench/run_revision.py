@@ -460,6 +460,66 @@ def _near_singular(evidences: list[Evidence]) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def _range_generalization(evidences: list[Evidence], quick: bool) -> pd.DataFrame:
+    """Train on an interior box and test on omitted edge bands.
+
+    This is controlled range extrapolation inside the globally declared
+    physical domain; it is not evidence for unrestricted out-of-domain use.
+    """
+    rows = []
+    for j, ev in enumerate(evidences):
+        xtr, ytr = np.asarray(ev.x_train), np.asarray(ev.y_train)
+        xte, yte = np.asarray(ev.x_test), np.asarray(ev.y_test)
+        seed = 811 + j
+        if ev.name.startswith("Rayleigh") or ev.name.startswith("Fanno"):
+            branch = xtr[:, 1] < 0.5
+            interior = (branch & (ytr >= 0.30) & (ytr <= 0.90)) | (~branch & (ytr >= 1.20) & (ytr <= 4.00))
+            branch_t = xte[:, 1] < 0.5
+            edge = (branch_t & ((yte < 0.30) | (yte > 0.90))) | (~branch_t & ((yte < 1.20) | (yte > 4.00)))
+            q = np.where(branch, (ytr - 0.2) / 0.8, (ytr - 1.0) / 4.0)
+            feature = np.sqrt(np.maximum(1.0 - xtr[:, 0], 0.0)).reshape(-1, 1) if ev.name.startswith("Rayleigh") else xtr[:, :1]
+            feature_t = np.sqrt(np.maximum(1.0 - xte[:, 0], 0.0)).reshape(-1, 1) if ev.name.startswith("Rayleigh") else xte[:, :1]
+            sub = branch & interior; sup = (~branch) & interior
+            sub_model = _mlp(seed, quick).fit(feature[sub], safe_logit(q[sub]))
+            sup_model = _mlp(seed + 1, quick).fit(feature[sup], safe_logit(q[sup]))
+            pred = np.empty(len(xte)); pred[branch_t] = 0.2 + 0.8 * expit(sub_model.predict(feature_t[branch_t])); pred[~branch_t] = 1.0 + 4.0 * expit(sup_model.predict(feature_t[~branch_t]))
+            valid = ((pred >= 0.2) & (pred <= 1.0) & branch_t) | ((pred >= 1.0) & (pred <= 5.0) & ~branch_t)
+        elif ev.name.startswith("Oblique"):
+            interior = (xtr[:, 0] >= 1.5) & (xtr[:, 0] <= 6.5) & (xtr[:, 1] >= 0.10) & (xtr[:, 1] <= 0.85)
+            edge = (xte[:, 0] < 1.5) | (xte[:, 0] > 6.5) | (xte[:, 1] < 0.10) | (xte[:, 1] > 0.85)
+            mu = mach_angle(xtr[:, 0]); span = 0.5 * np.pi - mu
+            latent = np.column_stack([safe_logit((ytr[:, 0] - mu) / span), safe_logit((ytr[:, 1] - mu) / span)])
+            model = _mlp(seed, quick, (64, 64)).fit(xtr[interior], latent[interior])
+            z = model.predict(xte); mu_t = mach_angle(xte[:, 0]); span_t = 0.5 * np.pi - mu_t
+            pred = np.column_stack([mu_t + span_t * expit(z[:, 0]), mu_t + span_t * expit(z[:, 1])])
+            valid = (pred[:, 0] >= mu_t) & (pred[:, 0] < pred[:, 1]) & (pred[:, 1] <= 0.5 * np.pi)
+        elif ev.name.startswith("Nozzle"):
+            q = (ytr - 1.0) / (xtr[:, 0] - 1.0)
+            interior = (xtr[:, 0] >= 2.0) & (xtr[:, 0] <= 4.5) & (q >= 0.10) & (q <= 0.90)
+            q_t = (yte - 1.0) / (xte[:, 0] - 1.0)
+            edge = (xte[:, 0] < 2.0) | (xte[:, 0] > 4.5) | (q_t < 0.10) | (q_t > 0.90)
+            model = _mlp(seed, quick, (64, 64)).fit(xtr[interior], safe_logit(q[interior]))
+            pred = 1.0 + expit(model.predict(xte)) * (xte[:, 0] - 1.0)
+            valid = (pred >= 1.0) & (pred <= xte[:, 0])
+        else:
+            p4, t4 = np.exp(xtr[:, 0]), np.exp(xtr[:, 1])
+            interior = (p4 >= 2.0) & (p4 <= 200.0) & (t4 >= 0.65) & (t4 <= 1.65)
+            p4_t, t4_t = np.exp(xte[:, 0]), np.exp(xte[:, 1])
+            edge = (p4_t < 2.0) | (p4_t > 200.0) | (t4_t < 0.65) | (t4_t > 1.65)
+            q = (ytr - 1.0) / (p4 - 1.0)
+            model = _mlp(seed, quick, (64, 64)).fit(xtr[interior], safe_logit(q[interior]))
+            pred = 1.0 + expit(model.predict(xte)) * (p4_t - 1.0)
+            valid = (pred > 1.0) & (pred < p4_t)
+        rows.append({
+            "problem": ev.name,
+            "interior_training_count": int(np.sum(interior)),
+            "edge_test_count": int(np.sum(edge)),
+            "valid_rate": float(np.mean(valid[edge])),
+            **regression_metrics(yte[edge], pred[edge]),
+        })
+    return pd.DataFrame(rows)
+
+
 def _timing(evidences: list[Evidence], quick: bool) -> pd.DataFrame:
     rows = []
     sizes = [1, 100, 1000 if quick else 5000]
@@ -536,6 +596,7 @@ def run(output: Path, quick: bool = False, seed: int = 11) -> None:
 
     metrics, baselines = _evaluate(evidences)
     near = _near_singular(evidences)
+    range_generalization = _range_generalization(evidences, quick)
     timing = _timing(evidences, quick)
     print("evaluating scaling", flush=True)
     scaling_builders = [item for item in builders if item[0] in {"Fanno inverse", "Oblique inverse"}]
@@ -569,6 +630,7 @@ def run(output: Path, quick: bool = False, seed: int = 11) -> None:
         "primary_metrics.csv": metrics,
         "baseline_comparison.csv": baselines,
         "near_singular_metrics.csv": near,
+        "range_generalization.csv": range_generalization,
         "timing.csv": timing,
         "training_size_scaling.csv": scaling,
         "seed_uncertainty.csv": uncertainty,

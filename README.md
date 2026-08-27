@@ -69,6 +69,8 @@ The neural models are not claimed to dominate every classical method. On covered
 
 The exact figure-to-file mapping is in [ARTICLE_FIGURE_MAP.md](ARTICLE_FIGURE_MAP.md).
 
+`results/revision/range_generalization.csv` contains the reviewer-requested edge-holdout experiment: the models are trained on interior parameter boxes and tested on omitted low/high bands inside the declared physical domain.
+
 ## Scope and limitations
 
 The benchmark assumes a calorically perfect gas with constant `gamma=1.4` and canonical one-dimensional relations. It does not validate reacting flow, variable heat capacity, multidimensional shocks, CFD coupling, or unrestricted extrapolation. Seed ensembles quantify optimizer variability, not calibrated probabilistic uncertainty. Input-domain checks reject unsupported states.
@@ -78,4 +80,3 @@ The benchmark assumes a calorically perfect gas with constant `gamma=1.4` and ca
 See [CITATION.cff](CITATION.cff). Until the journal article is published, cite the software repository and version/commit used.
 
 Copyright 2026 Ehsan Roohi. Released under the MIT License.
-

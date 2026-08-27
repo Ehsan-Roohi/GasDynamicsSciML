@@ -34,6 +34,9 @@ def main() -> None:
         "measured_timing.pdf",
         "nozzle_results.pdf",
     ]
+    range_table = RESULTS / "range_generalization.csv"
+    if not range_table.is_file() or len(pd.read_csv(range_table)) != 5:
+        raise AssertionError("Edge-holdout table must contain all five problems")
     for name in required:
         path = RESULTS / "figures" / name
         if not path.is_file() or path.stat().st_size == 0:

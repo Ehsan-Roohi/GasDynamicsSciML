@@ -6,6 +6,7 @@
 \newcommand{\comment}[1]{\par\medskip\noindent\textbf{Reviewer comment.} \emph{#1}\par}
 \newcommand{\response}[1]{\par\noindent\textcolor{responseblue}{\textbf{Response.} #1}\par\medskip}
 \setlength{\parindent}{0pt}
+\setlength{\emergencystretch}{1em}
 \title{Response to the Editor and Reviewers\\\large Manuscript AITF-D-26-00044}
 \author{Ehsan Roohi}
 \date{27 August 2026}
@@ -45,13 +46,13 @@ Thank you for the careful and constructive review of ``Physics-Guided Neural Sur
 \response{Section 4.3 compares branch-wise PCHIP/piecewise-linear interpolation, bracketed Brent roots, a naive MLP, and the physics-guided MLP. We report both accuracy and coverage. Importantly, interpolation is faster and more accurate for the covered one-dimensional tables; we now state that it is the preferred method in that setting. The neural advantage is bounded full-domain parameterization and multi-parameter/branch structure, not universal numerical superiority.}
 
 \comment{Demonstrate actual efficiency relative to root finding or interpolation.}
-\response{We removed the former ``indicative'' timing table. Table 3 and Figure 4 now report warm-up, seven-repeat median CPU timings with IQR stored in \texttt{timing.csv}. For 5000 queries the MLP is 96--1057 times faster than repeated bracketed roots, but interpolation is 4--11 times faster than the MLP. Offline training cost is excluded and this limitation is explicit.}
+\response{We removed the former ``indicative'' timing table. Table 4 and Figure 4 now report warm-up, seven-repeat median CPU timings with IQR stored in \texttt{timing.csv}. For 5000 queries the MLP is 96--1057 times faster than repeated bracketed roots, but interpolation is 4--11 times faster than the MLP. Offline training cost is excluded and this limitation is explicit.}
 
 \comment{Assess robustness near singularities and discontinuities.}
 \response{Section 4.2 and Figure 3 add local bins near Rayleigh/Fanno sonic states, oblique detachment, nozzle throat/exit limits, and high shock-tube pressure ratio. The Fanno transform enforces the quadratic sonic limit. Shock-tube discontinuities are reconstructed analytically rather than learned as a smooth field, and equation residuals are reported.}
 
 \comment{Test generalization to unseen parameter ranges.}
-\response{We clarify the claim. The blind grids contain unseen states and parameter combinations inside declared domains; they do not validate unrestricted extrapolation. Out-of-domain calls are rejected by input checks. The revised Limitations section removes any broad extrapolation claim and identifies controlled range-extension experiments as future work. This conservative revision avoids presenting interpolation as extrapolation.}
+\response{We added a dedicated edge-holdout experiment in new Table 3 and its machine-readable CSV. Each model is trained only on an interior box and tested on omitted low/high parameter bands inside the declared global physical domain. Edge-band relative $L_2$ errors are 0.0341 (Rayleigh), 0.0430 (Fanno), 0.00755 (oblique), 0.0106 (nozzle), and 0.00432 (shock tube), with 100\% hard-bound validity. The increased Rayleigh/Fanno errors are discussed explicitly. We call this controlled short-range extrapolation and continue to reject use beyond the global domain.}
 
 \comment{Quantify thermodynamic consistency.}
 \response{Section 4.2 now reports entropy-value $L_\infty$ discrepancies of 0.0205 (Rayleigh) and 0.0175 (Fanno), and zero entropy-maximum location error on the blind grid. We also report non-negativity, branch-ordering, nozzle-location, pressure-bound, and equation-residual diagnostics in \texttt{physical\_diagnostics.csv}. We no longer claim exact thermodynamic consistency for unconstrained property outputs.}

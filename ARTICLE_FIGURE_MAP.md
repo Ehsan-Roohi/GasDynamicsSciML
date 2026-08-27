@@ -12,5 +12,6 @@
 | Nozzle supplementary panel | `results/revision/figures/nozzle_results.pdf` | bounded shock-location grid |
 | Shock-tube supplementary panel | `results/revision/figures/shock_tube_results.pdf` | two-parameter residual audit |
 
-The PDF versions are vector graphics. PNG siblings are saved at 400 dpi for submission systems that require raster images.
+The edge-holdout range experiment is tabulated in `results/revision/range_generalization.csv` and reported in the manuscript text.
 
+The PDF versions are vector graphics. PNG siblings are saved at 400 dpi for submission systems that require raster images.
