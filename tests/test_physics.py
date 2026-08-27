@@ -15,7 +15,9 @@ from gasdynbench.physics import (
     rayleigh_inverse_t0,
     rayleigh_ratios,
     shock_tube_pressure_ratio,
+    shock_tube_pressure_ratio_general,
     shock_tube_residual,
+    shock_tube_residual_general,
 )
 
 
@@ -56,7 +58,19 @@ class PhysicsTests(unittest.TestCase):
         self.assertTrue(1.0 < p2 < p4)
         self.assertLess(abs(float(shock_tube_residual(p2, p4, t4))), 1e-8)
 
+    def test_general_shock_tube_reduces_to_equal_gas_relation(self):
+        for p4, t4, gamma in [(5.0, 0.8, 1.3), (40.0, 1.3, 1.4), (250.0, 1.8, 1.6)]:
+            standard = shock_tube_pressure_ratio(p4, t4, gamma)
+            general = shock_tube_pressure_ratio_general(p4, t4, gamma, gamma, 1.0)
+            self.assertAlmostEqual(standard, general, places=11)
+
+    def test_distinct_gas_shock_tube_residual(self):
+        inputs = (80.0, 1.4, 1.35, 1.66, 6.5)
+        p2 = shock_tube_pressure_ratio_general(*inputs)
+        self.assertTrue(1.0 < p2 < inputs[0])
+        residual = shock_tube_residual_general(p2, *inputs)
+        self.assertLess(abs(float(residual)), 1e-8)
+
 
 if __name__ == "__main__":
     unittest.main()
-

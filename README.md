@@ -33,12 +33,14 @@ python -m pip install --upgrade pip
 python -m pip install -e .
 python -m unittest discover -s tests -v
 gasdynbench --output results/revision
+gasdynbench-highdim --output results/revision
 ```
 
 The full CPU run trains the main models, three-seed ensembles, training-size studies, interpolation baselines, ablations, near-limit audits, and timing benchmarks. A reduced CI smoke run is:
 
 ```bash
 gasdynbench --quick --output results/ci
+gasdynbench-highdim --quick --output results/highdim-ci
 ```
 
 ## Key blind-test results
@@ -53,6 +55,8 @@ gasdynbench --quick --output results/ci
 
 The neural models are not claimed to dominate every classical method. On covered one-dimensional tables, PCHIP is both faster and more accurate. For 5,000 batched queries, neural inference is 96-1,057 times faster than repeated bracketed root finding, while interpolation remains 4-11 times faster than the MLP. See [RESULTS.md](RESULTS.md) for the complete interpretation.
 
+The generalized shock-tube audit extends the input from two to five physical parameters. At a matched approximately 4,096-state budget, interpolation relative L2 error grows from 0.0205% to 4.885%, while the bounded MLP gives 0.1771% in five dimensions. Interpolation is still slightly faster online; the demonstrated advantage is compact accuracy as regular-grid resolution becomes unaffordable.
+
 ## Repository map
 
 | Path | Purpose |
@@ -60,6 +64,7 @@ The neural models are not claimed to dominate every classical method. On covered
 | `src/gasdynbench/physics.py` | Exact analytical relations and bracketed inverse solvers |
 | `src/gasdynbench/modeling.py` | Scaled MLP and physical output-transform utilities |
 | `src/gasdynbench/run_revision.py` | One-command experiment and evidence pipeline |
+| `src/gasdynbench/high_dimensional.py` | Two-to-five-dimensional shock-tube scaling audit |
 | `src/gasdynbench/figures.py` | Vector PDF and 400-dpi PNG figure builder |
 | `tests/` | Sonic-state, branch, inverse-closure, and residual tests |
 | `results/revision/` | Frozen CSV evidence, environment record, and paper figures |
@@ -71,9 +76,11 @@ The exact figure-to-file mapping is in [ARTICLE_FIGURE_MAP.md](ARTICLE_FIGURE_MA
 
 `results/revision/range_generalization.csv` contains the reviewer-requested edge-holdout experiment: the models are trained on interior parameter boxes and tested on omitted low/high bands inside the declared physical domain.
 
+`results/revision/high_dimensional_scaling.csv` contains the matched-budget regular-grid/MLP comparison and actual serialized storage measurements.
+
 ## Scope and limitations
 
-The benchmark assumes a calorically perfect gas with constant `gamma=1.4` and canonical one-dimensional relations. It does not validate reacting flow, variable heat capacity, multidimensional shocks, CFD coupling, or unrestricted extrapolation. Seed ensembles quantify optimizer variability, not calibrated probabilistic uncertainty. Input-domain checks reject unsupported states.
+The five primary benchmarks assume a calorically perfect gas with constant `gamma=1.4`. The dimensional audit varies ideal-gas `gamma1`, `gamma4`, and `R4/R1`, but it does not validate reacting flow, variable heat capacity, multidimensional shocks, CFD coupling, or unrestricted extrapolation. Seed ensembles quantify optimizer variability, not calibrated probabilistic uncertainty. Input-domain checks reject unsupported states.
 
 ## Citation
 

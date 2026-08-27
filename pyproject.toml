@@ -21,7 +21,7 @@ dependencies = [
 
 [project.scripts]
 gasdynbench = "gasdynbench.run_revision:main"
+gasdynbench-highdim = "gasdynbench.high_dimensional_cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-

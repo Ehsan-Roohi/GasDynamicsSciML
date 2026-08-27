@@ -20,10 +20,11 @@ class RepositoryContractTests(unittest.TestCase):
             "manuscript/main_revised_clean.tex",
             "manuscript/response_to_reviewers.tex",
             "ARTICLE_FIGURE_MAP.md",
+            "scripts/run_high_dimensional_scaling.py",
+            "src/gasdynbench/high_dimensional.py",
         ]:
             self.assertTrue((root / relative).is_file(), relative)
 
 
 if __name__ == "__main__":
     unittest.main()
-
