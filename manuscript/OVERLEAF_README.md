@@ -11,6 +11,10 @@ This project is based on the original submitted Elsevier source.
 therefore cannot drift in content. Run BibTeX after the first article compile,
 then run pdfLaTeX twice. The response letter does not require BibTeX.
 
+`generated_timing_values.tex` is required by all three main documents. It is
+generated from the unified single-process timing CSVs and keeps Tables 9 and 12,
+the abstract, and the response letter numerically synchronized.
+
 The article contains only the overall framework workflow diagram. The five
 problem-specific TikZ diagrams are maintained in the public repository at
 <https://github.com/Ehsan-Roohi/GasDynamicsSciML/tree/main/docs/workflows>.

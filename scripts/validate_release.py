@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import math
 
 import pandas as pd
 
@@ -10,6 +11,18 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / "results" / "revision"
 MANUSCRIPT = (ROOT / "manuscript" / "main.tex").read_text(encoding="utf-8")
+GENERATED = (ROOT / "manuscript" / "generated_timing_values.tex").read_text(encoding="utf-8")
+
+
+def require_generated(name: str, value: str) -> None:
+    anchor = rf"\newcommand{{\{name}}}{{{value}}}"
+    if anchor not in GENERATED:
+        raise AssertionError(f"Generated timing value drift: {anchor}")
+
+
+def latex_scientific(value: float) -> str:
+    mantissa, exponent = f"{value:.2e}".split("e")
+    return rf"{mantissa}\times10^{{{int(exponent)}}}"
 
 
 def main() -> None:
@@ -55,18 +68,32 @@ def main() -> None:
     if "& 0.1771 &" not in MANUSCRIPT or abs(mlp_d5 - 0.0017710570639642381) > 5.0e-10:
         raise AssertionError(f"Five-dimensional MLP evidence drift: {mlp_d5}")
     application = pd.read_csv(RESULTS / "nozzle_gradient_audit.csv")
-    if "2.41\\times10^{-10}" not in MANUSCRIPT:
-        raise AssertionError("Missing nozzle Jacobian manuscript anchor")
-    if float(application["gradient_relative_difference"].max()) > 2.41e-10:
-        raise AssertionError("Nozzle analytical Jacobian audit drift")
+    require_generated("AuditNozzleMaxIterations", str(int(application["newton_iterations"].max())))
+    require_generated("AuditNozzleMaxShockError", latex_scientific(float(application["shock_target_abs_error"].max())))
+    require_generated("AuditNozzleMaxPressureError", latex_scientific(float(application["back_pressure_abs_error"].max())))
+    require_generated("AuditNozzleMaxJacobianDiscrepancy", latex_scientific(float(application["gradient_relative_difference"].max())))
     workload = pd.read_csv(RESULTS / "shock_tube_many_query.csv").set_index("method")
-    if "100,000-state" not in MANUSCRIPT or "14.3 times faster" not in MANUSCRIPT:
+    if "100,000-state" not in MANUSCRIPT or "\\TimingWorkloadSpeedup" not in MANUSCRIPT:
         raise AssertionError("Missing many-query manuscript anchor")
     if int(workload.loc["physics_guided_mlp", "query_count"]) != 100000:
         raise AssertionError("Shock-tube workload must contain 100,000 queries")
     speedup = float(workload.loc["physics_guided_mlp", "speedup_vs_brent"])
-    if round(speedup, 1) != 14.3:
-        raise AssertionError(f"Many-query timing evidence drift: {speedup}")
+    require_generated("TimingWorkloadBrentSeconds", f"{workload.loc['bracketed_brent', 'elapsed_seconds']:.3f}")
+    require_generated("TimingWorkloadMlpSeconds", f"{workload.loc['physics_guided_mlp', 'elapsed_seconds']:.3f}")
+    require_generated("TimingWorkloadSpeedup", f"{speedup:.1f}")
+    require_generated("TimingWorkloadRelLtwoPercent", f"{100.0 * workload.loc['physics_guided_mlp', 'rel_l2_vs_brent']:.4f}")
+    timing = pd.read_csv(RESULTS / "timing.csv")
+    batch = timing[timing["batch_size"] == 5000].pivot(
+        index="problem", columns="method", values="median_ms"
+    )
+    root_speedups = batch["bracketed_root"] / batch["physics_guided_mlp"]
+    require_generated("TimingRootSpeedMin", str(math.floor(root_speedups.min())))
+    require_generated("TimingRootSpeedMax", str(math.ceil(root_speedups.max())))
+    shock_speedup = float(root_speedups.loc["Shock tube implicit"])
+    if abs(shock_speedup - speedup) / speedup > 0.25:
+        raise AssertionError(
+            f"Shock-tube timing protocols disagree: 5000={shock_speedup}, workload={speedup}"
+        )
     for name in required:
         path = RESULTS / "article_figures" / name
         if not path.is_file() or path.stat().st_size == 0:

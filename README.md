@@ -36,7 +36,10 @@ python -m pip install -e .
 python -m unittest discover -s tests -v
 gasdynbench --output results/revision
 gasdynbench-highdim --output results/revision
-PYTHONPATH=src python scripts/run_application_audits.py --output results/revision
+OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 \
+  PYTHONPATH=src python scripts/run_application_audits.py \
+  --output results/revision \
+  --latex-output manuscript/generated_timing_values.tex
 PYTHONPATH=src python scripts/export_original_article_figures.py
 ```
 
@@ -45,7 +48,9 @@ The full CPU run trains the main models, three-seed ensembles, training-size stu
 ```bash
 gasdynbench --quick --output results/ci
 gasdynbench-highdim --quick --output results/highdim-ci
-PYTHONPATH=src python scripts/run_application_audits.py --quick --output results/application-ci
+OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 \
+  PYTHONPATH=src python scripts/run_application_audits.py \
+  --quick --output results/application-ci
 ```
 
 ## Key blind-test results
@@ -58,11 +63,11 @@ PYTHONPATH=src python scripts/run_application_audits.py --quick --output results
 | Nozzle inverse | 1.936e-3 | 4.756e-3 | 3.522e-3 | 100% |
 | Shock-tube implicit step | 9.490e-4 | 4.209e-3 | 2.388e-3 | 100% |
 
-The neural models are not claimed to dominate every classical method. On covered one-dimensional tables, PCHIP is both faster and more accurate. For 5,000 batched queries, neural inference is 96-1,057 times faster than repeated bracketed root finding, while interpolation remains 4-11 times faster than the MLP. See [RESULTS.md](RESULTS.md) for the complete interpretation.
+The neural models are not claimed to dominate every classical method. On covered one-dimensional tables, PCHIP is both faster and more accurate. In the unified single-thread timing run, neural inference for 5,000 queries is 18-810 times faster than repeated bracketed root finding, while interpolation is 5-10 times faster than the MLP. See [RESULTS.md](RESULTS.md) for the complete interpretation.
 
 The generalized shock-tube audit extends the input from two to five physical parameters. At a matched approximately 4,096-state budget, interpolation relative L2 error grows from 0.0205% to 4.885%, while the bounded MLP gives 0.1771% in five dimensions. Interpolation is still slightly faster online; the demonstrated advantage is compact accuracy as regular-grid resolution becomes unaffordable.
 
-The analytical-gradient nozzle audit solves nine target shock-location problems in at most six safeguarded Newton steps; the network Jacobian agrees with centered finite differences to within `2.41e-10` relative difference. For the prescribed 100,000-state shock-tube workload, the MLP is 14.3 times faster than one bracketed Brent solve per state with 0.158% relative L2 error. These application checks do not change the paper's limited conclusion that interpolation remains preferable for covered one-dimensional tables.
+The analytical-gradient nozzle audit solves nine target shock-location problems in at most six safeguarded Newton steps; the network Jacobian agrees with centered finite differences to within `1.37e-9` relative difference. For the prescribed 100,000-state shock-tube workload, the MLP is 16.5 times faster than one bracketed Brent solve per state with 0.0915% relative L2 error. The 5,000-query and 100,000-query shock-tube speedups (18.1 and 16.5) now come from one process, one model, and one Brent routine. These application checks do not change the paper's limited conclusion that interpolation remains preferable for covered one-dimensional tables.
 
 ## Repository map
 
@@ -88,7 +93,7 @@ The exact figure-to-file mapping is in [ARTICLE_FIGURE_MAP.md](ARTICLE_FIGURE_MA
 
 `results/revision/high_dimensional_scaling.csv` contains the matched-budget regular-grid/MLP comparison and actual serialized storage measurements.
 
-`results/revision/nozzle_gradient_audit.csv` and `shock_tube_many_query.csv` contain the two application-level demonstrations used in the manuscript.
+`results/revision/nozzle_gradient_audit.csv`, `timing.csv`, and `shock_tube_many_query.csv` are generated consecutively by the unified application runner. `manuscript/generated_timing_values.tex` supplies both timing tables and their prose values from those CSVs, preventing the article and evidence from drifting apart.
 
 ## Scope and limitations
 

@@ -46,6 +46,7 @@
 \fi
 \newcommand{\relLtwo}{L_{2,\mathrm{rel}}}
 \newcommand{\relLinf}{L_{\infty,\mathrm{rel}}}
+\input{generated_timing_values.tex}
 
 % Title and author information for Elsevier submission
 
@@ -69,7 +70,7 @@
             country={USA}}
 
 \begin{abstract}
-Canonical compressible thermal-fluid problems often involve implicit, singular, and multi-branched relations that are simple to state but cumbersome to evaluate repeatedly in modern engineering workflows such as design optimization, uncertainty quantification, inverse analysis, and real-time exploration. This work presents a compact physics-guided neural-surrogate framework for five classical gas-dynamics relations: Rayleigh flow, Fanno flow, oblique shocks, normal shocks in convergent-divergent nozzles, and unsteady shock tubes. The objective is not to propose a new general-purpose neural-network architecture or to rediscover analytical gas dynamics, but to show how problem-specific surrogate design can convert canonical implicit relations into fast, accurate, and physically interpretable forward and inverse solver components. Exact analytical relations are used to generate reference data, while the learning formulation is adapted to the mathematical structure of each problem through branch decomposition, \rev{sonic-coordinate and positive/bounded output transformations}, physics-informed feature engineering, \rev{exact boundary envelopes}, and hybrid AI--analytical reconstruction. The resulting multilayer-perceptron surrogates reproduce analytical solutions with small errors, preserve physically meaningful branch structure, and recover thermodynamic consistency on entropy-based diagrams. \rev{On independent blind grids, relative $L_2$ errors for the five principal inverse tasks range from $7.99\times10^{-4}$ to $3.43\times10^{-3}$. For batches of 5,000 queries, neural inference is 96--1057 times faster than repeated bracketed root solves. Classical interpolation remains faster and, for fixed one-dimensional tables, more accurate within its covered interval; the neural advantage is instead associated with hard admissibility constraints, differentiability, complete rectangular-domain coverage, and compact approximation as the number of physical inputs increases. An analytical-gradient nozzle inversion and a 100,000-state shock-tube workload demonstrate the differentiable and batched use cases directly.} By emphasizing inverse mappings, singular limits, and regime-dependent behavior, the framework provides a reproducible benchmark for scientific machine learning in compressible thermal-fluid analysis and a practical route toward embedding fast surrogate modules in real-time design-space exploration, optimization, and verification tools without repeated root-finding or table interpolation.
+Canonical compressible thermal-fluid problems often involve implicit, singular, and multi-branched relations that are simple to state but cumbersome to evaluate repeatedly in modern engineering workflows such as design optimization, uncertainty quantification, inverse analysis, and real-time exploration. This work presents a compact physics-guided neural-surrogate framework for five classical gas-dynamics relations: Rayleigh flow, Fanno flow, oblique shocks, normal shocks in convergent-divergent nozzles, and unsteady shock tubes. The objective is not to propose a new general-purpose neural-network architecture or to rediscover analytical gas dynamics, but to show how problem-specific surrogate design can convert canonical implicit relations into fast, accurate, and physically interpretable forward and inverse solver components. Exact analytical relations are used to generate reference data, while the learning formulation is adapted to the mathematical structure of each problem through branch decomposition, \rev{sonic-coordinate and positive/bounded output transformations}, physics-informed feature engineering, \rev{exact boundary envelopes}, and hybrid AI--analytical reconstruction. The resulting multilayer-perceptron surrogates reproduce analytical solutions with small errors, preserve physically meaningful branch structure, and recover thermodynamic consistency on entropy-based diagrams. \rev{On independent blind grids, relative $L_2$ errors for the five principal inverse tasks range from $7.99\times10^{-4}$ to $3.43\times10^{-3}$. For batches of 5,000 queries, neural inference is \TimingRootSpeedMin--\TimingRootSpeedMax\ times faster than repeated bracketed root solves. Classical interpolation remains faster and, for fixed one-dimensional tables, more accurate within its covered interval; the neural advantage is instead associated with hard admissibility constraints, differentiability, complete rectangular-domain coverage, and compact approximation as the number of physical inputs increases. An analytical-gradient nozzle inversion and a 100,000-state shock-tube workload demonstrate the differentiable and batched use cases directly.} By emphasizing inverse mappings, singular limits, and regime-dependent behavior, the framework provides a reproducible benchmark for scientific machine learning in compressible thermal-fluid analysis and a practical route toward embedding fast surrogate modules in real-time design-space exploration, optimization, and verification tools without repeated root-finding or table interpolation.
 \end{abstract}
 
 \begin{keyword}
@@ -832,22 +833,22 @@ Shock-tube implicit step & 97.4\% & 1.26e-4 & 9.490e-4 \\
 \end{tabular}
 \end{table}
 
-The resulting surrogates are most useful in many-query settings. Table~\ref{tab:baseline_timing} reports warm-started median CPU times from seven repeats for 5,000 queries. Batched MLP inference is 96--1057 times faster than repeated Brent solves, while interpolation remains approximately 4--11 times faster than the MLP. \rev{For a single query, the bracketed root is comparable and is faster than the MLP for Rayleigh and oblique-shock inversion; the neural speedup is therefore a batching effect rather than a universal per-query advantage.} Offline analytical data generation and model fitting are excluded from these online timings and must be amortized.
+The resulting surrogates are most useful in many-query settings. Tables~\ref{tab:baseline_timing} and~\ref{tab:shocktube_workload} were timed consecutively in one single-thread process using the same shock-tube model and Brent routine. For 5,000 queries, the MLP is \TimingRootSpeedMin--\TimingRootSpeedMax\ times faster than repeated roots, whereas interpolation is \TimingInterpSpeedMin--\TimingInterpSpeedMax\ times faster than the MLP. \rev{For one query, Brent is faster for Rayleigh, oblique-shock, and shock-tube inversion and comparable for Fanno; the neural benefit is a batching effect.} Offline data generation and training are excluded.
 
 \begin{table}[H]
 \centering
-\caption{Measured median CPU time for 5,000 queries.}
+\caption{Unified single-process median single-thread CPU time for 5,000 queries (seven repeats).}
 \label{tab:baseline_timing}
 \small
 \begin{tabular}{lrrrr}
 \toprule
 Problem & Brent roots (ms) & Interpolation (ms) & MLP (ms) & Root/MLP \\
 \midrule
-Rayleigh & 502.7 & 0.274 & 2.559 & 196 \\
-Fanno & 947.7 & 0.227 & 2.436 & 389 \\
-Oblique shock & 1501.7 & 3.852 & 15.615 & 96 \\
-Nozzle shock & 4292.2 & 0.970 & 4.060 & 1057 \\
-Shock tube & 2047.4 & 4.040 & 20.087 & 102 \\
+Rayleigh & \TimingRayleighRootMs & \TimingRayleighInterpMs & \TimingRayleighMlpMs & \TimingRayleighSpeedup \\
+Fanno & \TimingFannoRootMs & \TimingFannoInterpMs & \TimingFannoMlpMs & \TimingFannoSpeedup \\
+Oblique shock & \TimingObliqueRootMs & \TimingObliqueInterpMs & \TimingObliqueMlpMs & \TimingObliqueSpeedup \\
+Nozzle shock & \TimingNozzleRootMs & \TimingNozzleInterpMs & \TimingNozzleMlpMs & \TimingNozzleSpeedup \\
+Shock tube & \TimingShockTubeRootMs & \TimingShockTubeInterpMs & \TimingShockTubeMlpMs & \TimingShockTubeSpeedup \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -871,7 +872,7 @@ $d$ & Grid nodes/axis & Grid states & Interp. $L_2$ (\%) & MLP $L_2$ (\%) & Grid
 \end{tabular}
 \end{table}
 
-Two compact application-level checks test benefits that are not captured by pointwise accuracy alone. First, the analytical Jacobian of the two-layer Tanh nozzle MLP, including its input/output scaling and bounded sigmoid transform, is used in a safeguarded Newton iteration to find the back pressure that places the shock at a prescribed location. Table~\ref{tab:nozzle_gradient} summarizes three target locations for each of three nozzle geometries. The surrogate objective converges in at most six steps, and the analytical Jacobian agrees with centered finite differences to $2.41\times10^{-10}$ in relative terms. The back-pressure discrepancy reflects surrogate error against the exact nozzle relation, not differentiation error.
+Two compact application-level checks test benefits that are not captured by pointwise accuracy alone. First, the analytical Jacobian of the two-layer Tanh nozzle MLP, including its input/output scaling and bounded sigmoid transform, is used in a safeguarded Newton iteration to find the back pressure that places the shock at a prescribed location. Table~\ref{tab:nozzle_gradient} summarizes three target locations for each of three nozzle geometries. The surrogate objective converges in at most \AuditNozzleMaxIterations\ steps, and the analytical Jacobian agrees with centered finite differences to $\AuditNozzleMaxJacobianDiscrepancy$ in relative terms. The back-pressure discrepancy reflects surrogate error against the exact nozzle relation, not differentiation error.
 
 \begin{table}[H]
 \centering
@@ -882,24 +883,24 @@ Two compact application-level checks test benefits that are not captured by poin
 \toprule
 Cases & Max. iterations & Max. shock-target error & Max. $P_b/P_{01}$ error & Max. Jacobian discrepancy \\
 \midrule
-9 & 6 & $6.83\times10^{-9}$ & $1.24\times10^{-3}$ & $2.41\times10^{-10}$ \\
+9 & \AuditNozzleMaxIterations & $\AuditNozzleMaxShockError$ & $\AuditNozzleMaxPressureError$ & $\AuditNozzleMaxJacobianDiscrepancy$ \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Second, a prescribed 100,000-state shock-tube workload samples $P_4/P_1$ and $T_4/T_1$ log-uniformly over the declared model domain. Table~\ref{tab:shocktube_workload} reports the resulting shock-strength distribution and total CPU time. The MLP is 14.3 times faster than one bracketed solve per state, with relative $L_2$ error 0.158\% and 100\% valid pressure bounds. This is a deterministic propagation benchmark rather than calibrated probabilistic uncertainty quantification.
+Second, a prescribed 100,000-state shock-tube workload samples $P_4/P_1$ and $T_4/T_1$ log-uniformly over the declared domain. The MLP is \TimingWorkloadSpeedup\ times faster than Brent, close to the \TimingShockTubeSpeedup-fold result in Table~\ref{tab:baseline_timing}, with relative $L_2$ error \TimingWorkloadRelLtwoPercent\% and 100\% valid pressure bounds. This is deterministic propagation, not calibrated probabilistic uncertainty quantification.
 
 \begin{table}[H]
 \centering
-\caption{Prescribed 100,000-state shock-tube workload. Distribution columns report $P_2/P_1$.}
+\caption{Prescribed 100,000-state shock-tube workload from the same timing run. Distribution columns report $P_2/P_1$.}
 \label{tab:shocktube_workload}
 \small
 \begin{tabular}{lrrrrr}
 \toprule
 Method & Time (s) & Mean & 5th percentile & Median & 95th percentile \\
 \midrule
-Bracketed Brent & 1.706 & 4.2596 & 1.3773 & 3.7274 & 9.0311 \\
-Physics-guided MLP & 0.119 & 4.2594 & 1.3772 & 3.7260 & 9.0334 \\
+Bracketed Brent & \TimingWorkloadBrentSeconds & 4.2596 & 1.3773 & 3.7274 & 9.0311 \\
+Physics-guided MLP & \TimingWorkloadMlpSeconds & 4.2596 & 1.3773 & 3.7265 & 9.0327 \\
 \bottomrule
 \end{tabular}
 \end{table}

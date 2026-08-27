@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import os
+import platform
 import time
 from pathlib import Path
 
@@ -12,7 +14,7 @@ from scipy.special import expit
 
 from .modeling import regression_metrics
 from .physics import nozzle_back_pressure, shock_tube_pressure_ratio
-from .run_revision import _build_nozzle, _build_shock_tube
+from .run_revision import Evidence, _build_nozzle, _build_shock_tube, _timing, build_main_evidences
 
 
 def _nozzle_prediction_and_gradient(model, area: float, back_pressure: float) -> tuple[float, float]:
@@ -53,10 +55,18 @@ def _safeguarded_newton(model, area: float, target_shock: float) -> tuple[float,
     return pressure, 15, shock - target_shock
 
 
-def nozzle_gradient_audit(output: Path, quick: bool = False, seed: int = 11) -> pd.DataFrame:
+def nozzle_gradient_audit(
+    output: Path,
+    quick: bool = False,
+    seed: int = 11,
+    evidence: Evidence | None = None,
+) -> pd.DataFrame:
     """Demonstrate smooth analytical gradients in a nozzle inverse-design task."""
     count = 250 if quick else 900
-    evidence, _ = _build_nozzle(np.random.default_rng(seed + 300), count, seed + 3, quick)
+    if evidence is None:
+        evidence, _ = _build_nozzle(
+            np.random.default_rng(seed + 300), count, seed + 3, quick
+        )
     areas = (2.0, 3.25, 4.5)
     fractions = (0.25, 0.50, 0.75)
     rows: list[dict[str, float | int]] = []
@@ -100,36 +110,56 @@ def nozzle_gradient_audit(output: Path, quick: bool = False, seed: int = 11) -> 
 
 
 def shock_tube_many_query_audit(
-    output: Path, quick: bool = False, seed: int = 11
+    output: Path,
+    quick: bool = False,
+    seed: int = 11,
+    evidence: Evidence | None = None,
+    repeats: int | None = None,
 ) -> pd.DataFrame:
-    """Run a prescribed log-uniform 100,000-state shock-tube workload."""
+    """Run the prescribed workload with the same warm-up/repeat timing protocol."""
     training_count = 250 if quick else 900
     query_count = 2_000 if quick else 100_000
-    evidence, _ = _build_shock_tube(
-        np.random.default_rng(seed + 400), training_count, seed + 4, quick
-    )
+    repeats = repeats or (3 if quick else 7)
+    if evidence is None:
+        evidence, _ = _build_shock_tube(
+            np.random.default_rng(seed + 400), training_count, seed + 4, quick
+        )
     rng = np.random.default_rng(20260827)
     p4 = np.exp(rng.uniform(np.log(1.5), np.log(300.0), query_count))
     t4 = np.exp(rng.uniform(np.log(0.5), np.log(2.0), query_count))
     x = np.column_stack([np.log(p4), np.log(t4)])
 
-    evidence.predict(x[:32])
-    start = time.perf_counter()
-    mlp = evidence.predict(x)
-    mlp_seconds = time.perf_counter() - start
+    def mlp_call() -> np.ndarray:
+        return np.asarray(evidence.predict(x))
 
-    [shock_tube_pressure_ratio(float(p), float(t)) for p, t in zip(p4[:32], t4[:32])]
-    start = time.perf_counter()
-    exact = np.array(
-        [shock_tube_pressure_ratio(float(p), float(t)) for p, t in zip(p4, t4)]
-    )
-    brent_seconds = time.perf_counter() - start
+    def brent_call() -> np.ndarray:
+        return np.array(
+            [shock_tube_pressure_ratio(float(p), float(t)) for p, t in zip(p4, t4)]
+        )
+
+    mlp_call()
+    brent_call()
+    mlp_times = []
+    brent_times = []
+    mlp = np.empty(query_count)
+    exact = np.empty(query_count)
+    for _ in range(repeats):
+        start = time.perf_counter_ns()
+        mlp = mlp_call()
+        mlp_times.append((time.perf_counter_ns() - start) / 1.0e9)
+        start = time.perf_counter_ns()
+        exact = brent_call()
+        brent_times.append((time.perf_counter_ns() - start) / 1.0e9)
+    mlp_seconds = float(np.median(mlp_times))
+    brent_seconds = float(np.median(brent_times))
+    mlp_iqr = float(np.percentile(mlp_times, 75) - np.percentile(mlp_times, 25))
+    brent_iqr = float(np.percentile(brent_times, 75) - np.percentile(brent_times, 25))
 
     metrics = regression_metrics(exact, mlp)
     rows = []
-    for method, values, elapsed in (
-        ("bracketed_brent", exact, brent_seconds),
-        ("physics_guided_mlp", mlp, mlp_seconds),
+    for method, values, elapsed, iqr in (
+        ("bracketed_brent", exact, brent_seconds, brent_iqr),
+        ("physics_guided_mlp", mlp, mlp_seconds, mlp_iqr),
     ):
         rows.append(
             {
@@ -143,6 +173,7 @@ def shock_tube_many_query_audit(
                 "q50_p2_p1": float(np.quantile(values, 0.50)),
                 "q95_p2_p1": float(np.quantile(values, 0.95)),
                 "elapsed_seconds": elapsed,
+                "iqr_seconds": iqr,
                 "speedup_vs_brent": brent_seconds / elapsed,
                 "rel_l2_vs_brent": 0.0 if method == "bracketed_brent" else metrics["rel_l2"],
                 "valid_pressure_rate": float(np.mean((values > 1.0) & (values < p4))),
@@ -153,11 +184,82 @@ def shock_tube_many_query_audit(
     return table
 
 
-def run(output: Path, quick: bool = False, seed: int = 11) -> dict[str, object]:
-    """Run both application audits and write their machine-readable evidence."""
+def _write_latex_timing_values(
+    path: Path, timing: pd.DataFrame, shock: pd.DataFrame, nozzle: pd.DataFrame
+) -> None:
+    """Write one generated source for every timing number cited in the article."""
+    batch = timing[timing["batch_size"] == timing["batch_size"].max()]
+    pivot = batch.pivot(index="problem", columns="method", values="median_ms")
+    order = [
+        ("Rayleigh", "Rayleigh inverse"),
+        ("Fanno", "Fanno inverse"),
+        ("Oblique", "Oblique inverse"),
+        ("Nozzle", "Nozzle inverse"),
+        ("ShockTube", "Shock tube implicit"),
+    ]
+    speedups = pivot["bracketed_root"] / pivot["physics_guided_mlp"]
+    interpolation_ratios = pivot["physics_guided_mlp"] / pivot["classical_interpolation"]
+    brent = shock.set_index("method").loc["bracketed_brent"]
+    mlp = shock.set_index("method").loc["physics_guided_mlp"]
+
+    def latex_scientific(value: float) -> str:
+        mantissa, exponent = f"{value:.2e}".split("e")
+        return rf"{mantissa}\times10^{{{int(exponent)}}}"
+
+    lines = [
+        "% Generated by scripts/run_application_audits.py; do not edit manually.",
+        rf"\newcommand{{\TimingRootSpeedMin}}{{{int(np.floor(speedups.min()))}}}",
+        rf"\newcommand{{\TimingRootSpeedMax}}{{{int(np.ceil(speedups.max()))}}}",
+        rf"\newcommand{{\TimingInterpSpeedMin}}{{{int(np.floor(interpolation_ratios.min()))}}}",
+        rf"\newcommand{{\TimingInterpSpeedMax}}{{{int(np.ceil(interpolation_ratios.max()))}}}",
+    ]
+    for macro, problem in order:
+        lines.extend(
+            [
+                rf"\newcommand{{\Timing{macro}RootMs}}{{{pivot.loc[problem, 'bracketed_root']:.3f}}}",
+                rf"\newcommand{{\Timing{macro}InterpMs}}{{{pivot.loc[problem, 'classical_interpolation']:.3f}}}",
+                rf"\newcommand{{\Timing{macro}MlpMs}}{{{pivot.loc[problem, 'physics_guided_mlp']:.3f}}}",
+                rf"\newcommand{{\Timing{macro}Speedup}}{{{speedups.loc[problem]:.1f}}}",
+            ]
+        )
+    lines.extend(
+        [
+            rf"\newcommand{{\TimingWorkloadBrentSeconds}}{{{brent['elapsed_seconds']:.3f}}}",
+            rf"\newcommand{{\TimingWorkloadMlpSeconds}}{{{mlp['elapsed_seconds']:.3f}}}",
+            rf"\newcommand{{\TimingWorkloadSpeedup}}{{{mlp['speedup_vs_brent']:.1f}}}",
+            rf"\newcommand{{\TimingWorkloadRelLtwoPercent}}{{{100.0 * mlp['rel_l2_vs_brent']:.4f}}}",
+            rf"\newcommand{{\AuditNozzleMaxIterations}}{{{int(nozzle['newton_iterations'].max())}}}",
+            rf"\newcommand{{\AuditNozzleMaxShockError}}{{{latex_scientific(float(nozzle['shock_target_abs_error'].max()))}}}",
+            rf"\newcommand{{\AuditNozzleMaxPressureError}}{{{latex_scientific(float(nozzle['back_pressure_abs_error'].max()))}}}",
+            rf"\newcommand{{\AuditNozzleMaxJacobianDiscrepancy}}{{{latex_scientific(float(nozzle['gradient_relative_difference'].max()))}}}",
+        ]
+    )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def run(
+    output: Path,
+    quick: bool = False,
+    seed: int = 11,
+    latex_output: Path | None = None,
+) -> dict[str, object]:
+    """Run timing and application audits in one process with shared models."""
     output.mkdir(parents=True, exist_ok=True)
-    nozzle = nozzle_gradient_audit(output, quick=quick, seed=seed)
-    shock = shock_tube_many_query_audit(output, quick=quick, seed=seed)
+    evidences, _ = build_main_evidences(quick=quick, seed=seed)
+    timing = _timing(evidences, quick=quick)
+    timing.to_csv(output / "timing.csv", index=False)
+    nozzle = nozzle_gradient_audit(
+        output, quick=quick, seed=seed, evidence=evidences[3]
+    )
+    shock = shock_tube_many_query_audit(
+        output, quick=quick, seed=seed, evidence=evidences[4]
+    )
+    if latex_output is not None:
+        _write_latex_timing_values(latex_output, timing, shock, nozzle)
+    batch = timing[timing["batch_size"] == timing["batch_size"].max()]
+    timing_pivot = batch.pivot(index="problem", columns="method", values="median_ms")
+    root_speedups = timing_pivot["bracketed_root"] / timing_pivot["physics_guided_mlp"]
     summary = {
         "nozzle_cases": int(len(nozzle)),
         "nozzle_max_iterations": int(nozzle["newton_iterations"].max()),
@@ -167,6 +269,18 @@ def run(output: Path, quick: bool = False, seed: int = 11) -> dict[str, object]:
         "shock_tube_queries": int(shock["query_count"].iloc[0]),
         "shock_tube_rel_l2": float(shock.loc[shock["method"] == "physics_guided_mlp", "rel_l2_vs_brent"].iloc[0]),
         "shock_tube_speedup": float(shock.loc[shock["method"] == "physics_guided_mlp", "speedup_vs_brent"].iloc[0]),
+        "timing_root_speedup_min": float(root_speedups.min()),
+        "timing_root_speedup_max": float(root_speedups.max()),
+        "timing_session": {
+            "python": platform.python_version(),
+            "platform": platform.platform(),
+            "processor": platform.processor(),
+            "repeats": 3 if quick else 7,
+            "omp_num_threads": os.environ.get("OMP_NUM_THREADS", "not fixed"),
+            "openblas_num_threads": os.environ.get("OPENBLAS_NUM_THREADS", "not fixed"),
+            "mkl_num_threads": os.environ.get("MKL_NUM_THREADS", "not fixed"),
+            "protocol": "shared models and process; warm-up; median and IQR wall-clock CPU timing",
+        },
     }
     (output / "application_audit_summary.json").write_text(
         json.dumps(summary, indent=2), encoding="utf-8"
